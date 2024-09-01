@@ -107,15 +107,13 @@ impl Lexer {
     fn accept_while<F>(&mut self, f: F) -> Option<Fragment> where F: Fn(usize, char) -> bool  {
         let slice = &self.input[self.read_idx..];
         let mut next_iter = slice.char_indices();
-        let mut last_i = 0;
         let end = loop {
             if let Some((i, c)) = next_iter.next() {
                 if !f(i, c) {
                     break i;
                 }
-                last_i = i;
             } else {
-                break last_i
+                break slice.len();
             }
         };
         if end > 0 {
