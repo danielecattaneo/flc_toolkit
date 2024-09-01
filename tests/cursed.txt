@@ -1,3 +1,5 @@
+// correct output must have two I-states, each with one candidate,
+// and no conflicts
 mnet {
     machine S {
         state 0 {

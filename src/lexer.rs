@@ -147,18 +147,14 @@ impl Lexer {
     }
 
     fn skip_whitespace(&mut self) {
-        let slice = &self.input[self.read_idx..];
-        let mut next_iter = slice.char_indices();
-        let end = loop {
-            if let Some((i, c)) = next_iter.next() {
-                if !c.is_ascii_whitespace() {
-                    break i;
-                }
+        loop {
+            self.accept_while(|_, c| c.is_ascii_whitespace());
+            if let Some(_) = self.accept_pattern("//") {
+                self.accept_while(|_, c| c != '\n' && c != '\r');
             } else {
-                break slice.len();
+                break;
+            }
         }
-        };
-        self.advance(end);
     }
 }
 
