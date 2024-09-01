@@ -104,21 +104,18 @@ impl Lexer {
         }
     }
 
-    fn accept_identifier(&mut self) -> Option<Fragment> {
+    fn accept_while<F>(&mut self, f: F) -> Option<Fragment> where F: Fn(usize, char) -> bool  {
         let slice = &self.input[self.read_idx..];
         let mut next_iter = slice.char_indices();
+        let mut last_i = 0;
         let end = loop {
             if let Some((i, c)) = next_iter.next() {
-                let cond = if i == 0 {
-                    c.is_ascii_alphabetic()
-                } else {
-                    c.is_ascii_alphanumeric()
-                };
-                if !(c == '_' || cond) {
+                if !f(i, c) {
                     break i;
                 }
+                last_i = i;
             } else {
-                break slice.len();
+                break last_i
             }
         };
         if end > 0 {
@@ -128,32 +125,25 @@ impl Lexer {
         }
     }
 
-    fn accept_number(&mut self) -> Option<Fragment> {
-        let slice = &self.input[self.read_idx..];
-        let mut next_iter = slice.char_indices();
-        let end = loop {
-            if let Some((i, c)) = next_iter.next() {
-                if !c.is_ascii_digit() {
-                    break i;
-                }
+    fn accept_identifier(&mut self) -> Option<Fragment> {
+        self.accept_while(|i, c| {
+            let cond = if i == 0 {
+                c.is_ascii_alphabetic()
             } else {
-                break slice.len();
-            }
-        };
-        if end > 0 {
-            Some(self.advance(end))
-        } else {
-            None
-        }
+                c.is_ascii_alphanumeric()
+            };
+            c == '_' || cond
+        })
+    }
+
+    fn accept_number(&mut self) -> Option<Fragment> {
+        self.accept_while(|_, c| c.is_ascii_digit())
     }
 
     fn accept_invalid(&mut self) -> Option<Fragment> {
         let slice = &self.input[self.read_idx..];
-        if let Some((i, _)) = slice.char_indices().next() {
-            Some(self.advance(i))
-        } else {
-            None
-        }
+        let (i, _) = slice.char_indices().next()?;
+        Some(self.advance(i))
     }
 
     fn skip_whitespace(&mut self) {
@@ -166,7 +156,7 @@ impl Lexer {
                 }
             } else {
                 break slice.len();
-            }
+        }
         };
         self.advance(end);
     }

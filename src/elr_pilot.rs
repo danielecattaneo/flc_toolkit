@@ -11,28 +11,16 @@ pub struct MachineNet {
 
 impl MachineNet {
     pub fn try_lookup_machine(&self, machine: char) -> Option<&Machine> {
-        for m in &self.machines {
-            if m.name == machine {
-                return Some(m);
-            }
-        }
-        None
+        self.machines.iter().find(|m| m.name == machine)
     }
 
     pub fn lookup_machine(&self, machine: char) -> &Machine {
-        if let Some(m) = self.try_lookup_machine(machine) {
-            m
-        } else {
-            panic!("machine {machine} does not exist")
-        }
+        self.try_lookup_machine(machine).expect("machine does not exist")
     }
 
     pub fn try_lookup_state(&self, machine: char, id: i32) -> Option<&State> {
-        if let Some(m) = self.try_lookup_machine(machine) {
-            m.try_lookup_state(id)
-        } else {
-            None
-        }
+        let m = self.try_lookup_machine(machine)?;
+        m.try_lookup_state(id)
     }
 
     pub fn lookup_state(&self, machine: char, id: i32) -> &State {
@@ -50,13 +38,12 @@ impl MachineNet {
 
     fn validate_start(&self) -> bool {
         // There must be a S-named machine
-        for m in &self.machines {
-            if m.name == 'S' {
-                return true;
-            }
+        if let None = self.machines.iter().find(|m| m.name == 'S') {
+            eprintln!("error: axiom (machine named S) missing");
+            false
+        } else {
+            true
         }
-        eprintln!("error: axiom (machine named S) missing");
-        false
     }
 
     fn validate_state_count(&self) -> bool {
@@ -161,7 +148,7 @@ impl MachineNet {
 
     fn followers(&self, machine: char, id: i32, next: HashSet<char>) -> HashSet<char> {
         let mut visited: HashSet<(char, i32)> = HashSet::new();
-        return self.followers_impl(machine, id, &mut visited, &next);
+        self.followers_impl(machine, id, &mut visited, &next)
     }
 }
 
@@ -290,28 +277,16 @@ pub struct Pilot {
 
 impl Pilot {
     fn lookup_state_mut(&mut self, id: i32) -> &mut PilotState {
-        for s in &mut self.states {
-            if s.id == id {
-                return s;
-            }
-        }
-        panic!("state {id} does not exist");
+        self.states.iter_mut().find(|s| s.id == id).expect("state does not exist")
     }
 
     pub fn lookup_state(&self, id: i32) -> &PilotState {
-        for s in &self.states {
-            if s.id == id {
-                return s;
-            }
-        }
-        panic!("state {id} does not exist");
+        self.states.iter().find(|s| s.id == id).expect("state does not exist")
     }
 
     fn insert(&mut self, mut new: PilotState, net: &MachineNet) -> i32 {
-        for s in &self.states {
-            if s.is_equivalent(&new) {
-                return s.id;
-            }
+        if let Some(s) = self.states.iter().find(|s| s.is_equivalent(&new)) {
+            return s.id;
         }
         let id = self.states.len() as i32;
         new.id = id;
