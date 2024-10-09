@@ -46,6 +46,22 @@ impl MachineNet {
         }
     }
 
+    fn validate_not_reentrant(&self) -> bool {
+        // There must be no incoming transitions to the initial state of a machine (from the same machine)
+        let mut res = true;
+        for m in &self.machines {
+            for s in &m.states {
+                for ts in &s.transitions {
+                    if ts.dest_id == 0 {
+                        eprintln!("error: machine {} re-entrant because of transition {}{} -{}-> 0{}", m.name, s.id, m.name, ts.character, m.name);
+                        res = false;
+                    }
+                }
+            }
+        }
+        res
+    }
+
     fn validate_state_count(&self) -> bool {
         // All machines must have > 0 states
         let mut res = true;
@@ -117,6 +133,7 @@ impl MachineNet {
         [
             self.validate_machine_count(),
             self.validate_start(),
+            self.validate_not_reentrant(),
             self.validate_state_count(),
             self.validate_single_initial_state(),
             self.validate_any_final_state(),
