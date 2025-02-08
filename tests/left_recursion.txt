@@ -1,0 +1,7 @@
+mnet {
+    machine S {
+        state 0 { initial; final; S->1; }
+        state 1 { a->2; }
+        state 2 { final; }
+    }
+}

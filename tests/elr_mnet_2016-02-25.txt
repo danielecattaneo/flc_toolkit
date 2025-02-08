@@ -1,0 +1,21 @@
+mnet {
+    machine S {
+        state 0 { initial; A -> 1; B -> 3; }
+        state 1 { A -> 1; a -> 2; }
+        state 2 { final; a -> 2; }
+        state 3 { final; B -> 3; }
+    }
+    machine A {
+        state 0 { initial; a -> 1; }
+        state 1 { A -> 2; b -> 3; }
+        state 2 { b -> 3; }
+        state 3 { final; }
+    }
+    machine B {
+        state 0 { initial; a -> 1; }
+        state 1 { B -> 2; b -> 3; }
+        state 2 { b -> 3; }
+        state 3 { final; }
+    }
+}
+
