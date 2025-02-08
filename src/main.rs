@@ -1,7 +1,8 @@
-mod elr_pilot;
-mod fsm;
 mod lexer;
 mod parser;
+mod fsm;
+mod mnet;
+mod elr_pilot;
 
 use std::env::args;
 use std::path::Path;

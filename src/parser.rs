@@ -1,7 +1,7 @@
 use std::mem::replace;
 
 use crate::lexer::*;
-use crate::elr_pilot::*;
+use crate::mnet::*;
 
 pub struct Parser {
     lexer: Lexer,
