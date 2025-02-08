@@ -22,7 +22,7 @@ impl PilotState {
         let mut states: Vec<(char, i32)> = self.candidates.iter().map(|c| {
             (c.machine, c.state)
         }).collect();
-        states.sort();
+        states.sort_by_key(|(m, s)| (if *m == 'S' { '@' } else { *m }, *s));
         states.dedup();
         states.into_iter().map(|(machine, state)| {
             let raw_candidates: Vec<_> = self.candidates.iter().filter(|c| {
@@ -77,7 +77,7 @@ impl PilotState {
 
         let transitions: Vec<_> = self.transitions.iter().map(|t| {
             let double = if t.multiplicity > 1 {
-                ", color = \"black:invis:black\""
+                ", color = \"black:black\""
             } else {
                 ""
             };
