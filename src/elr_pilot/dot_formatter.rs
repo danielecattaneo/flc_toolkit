@@ -10,7 +10,7 @@ struct MergedCandidate {
 impl MergedCandidate {
     fn to_dot_label_html(&self) -> String {
         let look_strs: Vec<_> = self.lookaheads.iter().map(|c| c.to_string()).collect();
-        let look_str = look_strs.join(", ");
+        let look_str = look_strs.join(",");
         let state = format!("{}<sub>{}</sub>", self.state, self.machine);
         let state = if self.is_final { format!("({})", state) } else { state };
         format!("<tr><td sides=\"ltb\">{state}</td><td sides=\"trb\">{look_str}</td></tr>")
