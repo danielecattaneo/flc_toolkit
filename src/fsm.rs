@@ -1,3 +1,5 @@
+mod dot_formatter;
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Transition {
     pub character: char,

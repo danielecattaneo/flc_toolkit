@@ -1,4 +1,5 @@
 mod validation;
+mod dot_formatter;
 
 pub use crate::fsm::*;
 
