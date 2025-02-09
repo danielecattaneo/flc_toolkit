@@ -54,10 +54,10 @@ impl MachineNet {
         for m in &self.machines {
             for s in &m.states {
                 if s.is_initial && s.id != 0 {
-                    eprintln!("error: state {}{} cannot be initial", m.name, s.id);
+                    eprintln!("error: state {}{} cannot be initial", s.id, m.name);
                     res = false;
                 } else if s.id == 0 && !s.is_initial {
-                    eprintln!("error: state {}{} must be initial", m.name, s.id);
+                    eprintln!("error: state {}{} must be initial", s.id, m.name);
                     res = false;
                 }
             }
@@ -82,18 +82,18 @@ impl MachineNet {
             for s in &m.states {
                 for (i, t) in s.transitions.iter().enumerate() {
                     if let None = m.try_lookup_state(t.dest_id) {
-                        eprintln!("error: transition {}{} -{}-> {}{} goes to a non-existent state", m.name, s.id, t.character, m.name, t.dest_id);
+                        eprintln!("error: transition {}{} -{}-> {}{} goes to a non-existent state", s.id, m.name, t.character, t.dest_id, m.name);
                         res = false;
                     }
                     if t.is_nonterminal() {
                         if let None = self.try_lookup_machine(t.character) {
-                            eprintln!("error: transition {}{} -{}-> ... has an invalid nonterminal", m.name, s.id, t.character);
+                            eprintln!("error: transition {}{} -{}-> ... has an invalid nonterminal label", s.id, m.name, t.character);
                             res = false;
                         }
                     }
                     for tj in &s.transitions[i+1..] {
                         if t.character == tj.character {
-                            eprintln!("error: multiple transitions {}{} -{}-> ...", m.name, s.id, t.character);
+                            eprintln!("error: multiple transitions {}{} -{}-> ...", s.id, m.name, t.character);
                             res = false;
                         }
                     }
