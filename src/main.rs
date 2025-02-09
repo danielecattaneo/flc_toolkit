@@ -41,7 +41,9 @@ fn cmd_echo_mnet(args: &[String]) -> Option<&[String]> {
     let lex = Lexer::from_path(Path::new(file));
     let mut pars = Parser::new(lex);
     if let Some(net) = pars.parse_mnet() {
-        println!("{}", net.to_dot());
+        if net.validate() {
+            println!("{}", net.to_dot());
+        }
     }
     return Some(&args[1..]);
 }
