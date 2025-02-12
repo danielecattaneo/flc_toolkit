@@ -11,13 +11,29 @@ enum RegexFmtCharClass {
     BinOp(char)
 }
 
-struct RegexFormatter {
-    numbered: bool,
-    prev: RegexFmtCharClass,
+impl Regex {
+    fn precedence(&self) -> i32 {
+        match self {
+            Regex::Null | Regex::Literal(_, _) => 0,
+            Regex::Star(_) | Regex::Plus(_) => -1,
+            Regex::Concat(_, _) => -2,
+            Regex::Union(_, _) => -3
+        }
+    }
 }
 
-impl RegexFormatter {
-    fn write(&mut self, f: &mut fmt::Formatter<'_>, next: RegexFmtCharClass) -> fmt::Result {
+struct RegexFormatter<'a, 'b> {
+    numbered: bool,
+    prev: RegexFmtCharClass,
+    // if this line was f: &'a mut fmt::Formatter<'a>, it would invalidate the
+    // implicit lifetime annotations on the fmt() function, as it forces the
+    // formatter to live as long as the reference ('b), which however dies at
+    // the end of fmt().
+    f: &'b mut fmt::Formatter<'a>
+}
+
+impl RegexFormatter<'_, '_> {
+    fn write(&mut self, next: RegexFmtCharClass) -> fmt::Result {
         let space = if !self.numbered {
             false
         } else if let RegexFmtCharClass::Ini = self.prev {
@@ -37,68 +53,57 @@ impl RegexFormatter {
             }
         };
         if space {
-            write!(f, " ")?;
+            write!(self.f, " ")?;
         }
         match next {
             RegexFmtCharClass::Ini => fmt::Result::Ok(()),
             RegexFmtCharClass::Literal(c, i) => {
                 if !self.numbered {
-                    write!(f, "{}", c)
+                    write!(self.f, "{}", c)
                 } else {
-                    write!(f, "{}{}", c, i)
+                    write!(self.f, "{}{}", c, i)
                 }
             }
-            RegexFmtCharClass::OpenGroup(c) => write!(f, "{}", c),
-            RegexFmtCharClass::ClosedGroup(c) => write!(f, "{}", c),
-            RegexFmtCharClass::UnOp(c) => write!(f, "{}", c),
-            RegexFmtCharClass::BinOp(c) => write!(f, "{}", c)
+            RegexFmtCharClass::OpenGroup(c)
+                | RegexFmtCharClass::ClosedGroup(c)
+                | RegexFmtCharClass::UnOp(c)
+                | RegexFmtCharClass::BinOp(c) => write!(self.f, "{}", c)
         }?;
         self.prev = next;
         fmt::Result::Ok(())
     }
 
-    fn fmt_child(&mut self, f: &mut fmt::Formatter<'_>, mom: &Regex, daughter: &Regex) -> fmt::Result {
+    fn fmt_child(&mut self, mom: &Regex, daughter: &Regex) -> fmt::Result {
         if mom.precedence() > daughter.precedence() {
-            self.write(f, RegexFmtCharClass::OpenGroup('('))?;
-            self.fmt(f, daughter)?;
-            self.write(f, RegexFmtCharClass::ClosedGroup(')'))
+            self.write(RegexFmtCharClass::OpenGroup('('))?;
+            self.fmt(daughter)?;
+            self.write(RegexFmtCharClass::ClosedGroup(')'))
         } else {
-            self.fmt(f, daughter)
+            self.fmt(daughter)
         }
     }
 
-    fn fmt(&mut self, f: &mut fmt::Formatter<'_>, re: &Regex) -> fmt::Result {
+    fn fmt(&mut self, re: &Regex) -> fmt::Result {
         match re {
-            Regex::Null => self.write(f, RegexFmtCharClass::Literal('_', 0)),
-            Regex::Literal(c, i) => self.write(f, RegexFmtCharClass::Literal(*c, *i)),
+            Regex::Null => self.write(RegexFmtCharClass::Literal('_', 0)),
+            Regex::Literal(c, i) => self.write(RegexFmtCharClass::Literal(*c, *i)),
             Regex::Star(re2) => {
-                self.fmt_child(f, re, re2)?;
-                self.write(f, RegexFmtCharClass::UnOp('*'))
+                self.fmt_child(re, re2)?;
+                self.write(RegexFmtCharClass::UnOp('*'))
             },
             Regex::Plus(re2) => {
-                self.fmt_child(f, re, re2)?;
-                self.write(f, RegexFmtCharClass::UnOp('+'))
+                self.fmt_child(re, re2)?;
+                self.write(RegexFmtCharClass::UnOp('+'))
             },
             Regex::Concat(lhs, rhs) => {
-                self.fmt_child(f, re, lhs)?;
-                self.fmt_child(f, re, rhs)
+                self.fmt_child(re, lhs)?;
+                self.fmt_child(re, rhs)
             },
             Regex::Union(lhs, rhs) => {
-                self.fmt_child(f, re, lhs)?;
-                self.write(f, RegexFmtCharClass::BinOp('|'))?;
-                self.fmt_child(f, re, rhs)
+                self.fmt_child(re, lhs)?;
+                self.write(RegexFmtCharClass::BinOp('|'))?;
+                self.fmt_child(re, rhs)
             }
-        }
-    }
-}
-
-impl Regex {
-    fn precedence(&self) -> i32 {
-        match self {
-            Regex::Null | Regex::Literal(_, _) => 0,
-            Regex::Star(_) | Regex::Plus(_) => -1,
-            Regex::Concat(_, _) => -2,
-            Regex::Union(_, _) => -3
         }
     }
 }
@@ -107,8 +112,9 @@ impl fmt::Display for Regex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut refmt = RegexFormatter{
             numbered: true, 
-            prev: RegexFmtCharClass::Ini
+            prev: RegexFmtCharClass::Ini,
+            f
         };
-        refmt.fmt(f, self)
+        refmt.fmt(self)
     }
 }
