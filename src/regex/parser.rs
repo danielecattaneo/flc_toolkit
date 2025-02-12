@@ -112,14 +112,15 @@ macro_rules! accept {
 pub struct RegexParser<'a> {
     string: & 'a str,
     lexer: RegexLexer<'a>,
-    lookahead: Option<RegexToken>
+    lookahead: Option<RegexToken>,
+    lit_counter: usize
 }
 
 impl RegexParser<'_> {
     pub fn new(string: &str) -> RegexParser {
         let mut lexer = RegexLexer::from_str(string);
         let lookahead = lexer.next();
-        RegexParser{ string, lexer, lookahead }
+        RegexParser{ string, lexer, lookahead, lit_counter: 0 }
     }
 
     fn emit_error(&self, s: &str) {
@@ -155,7 +156,8 @@ impl RegexParser<'_> {
             Some(Regex::Null)
         } else if let token!(RegexTokenValue::Literal(c)) = self.lookahead {
             self.advance();
-            Some(Regex::Literal(c))
+            self.lit_counter += 1;
+            Some(Regex::Literal(c, self.lit_counter))
         } else {
             self.emit_error("expected a character or a group");
             None

@@ -5,7 +5,7 @@ use std::fmt;
 #[derive(Debug)]
 pub enum Regex {
     Null,
-    Literal(char),
+    Literal(char, usize),
     Union(Box<Regex>, Box<Regex>),
     Concat(Box<Regex>, Box<Regex>),
     Star(Box<Regex>),
@@ -15,7 +15,7 @@ pub enum Regex {
 impl Regex {
     fn precedence(&self) -> i32 {
         match self {
-            Regex::Null | Regex::Literal(_) => 0,
+            Regex::Null | Regex::Literal(_, _) => 0,
             Regex::Star(_) | Regex::Plus(_) => -1,
             Regex::Concat(_, _) => -2,
             Regex::Union(_, _) => -3
@@ -35,7 +35,7 @@ impl fmt::Display for Regex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Regex::Null => write!(f, "_"),
-            Regex::Literal(c) => write!(f, "{}", c),
+            Regex::Literal(c, _) => write!(f, "{}", c),
             Regex::Star(re) => {
                 self.fmt_child(re, f)?;
                 write!(f, "*")
