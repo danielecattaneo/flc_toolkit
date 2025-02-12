@@ -76,7 +76,7 @@ fn cmd_echo_regex(args: &[String]) -> Option<&[String]> {
     let re_str = &args[0];
     let mut pars = RegexParser::new(re_str);
     if let Some(re) = pars.parse_regex() {
-        println!("{}", re);
+        println!("{}", re.to_string());
     }
     return Some(&args[1..]);
 }

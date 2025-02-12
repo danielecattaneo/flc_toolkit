@@ -22,18 +22,14 @@ impl Regex {
     }
 }
 
-struct RegexFormatter<'a, 'b> {
+struct RegexFormatter {
     numbered: bool,
     prev: RegexFmtCharClass,
-    // if this line was f: &'a mut fmt::Formatter<'a>, it would invalidate the
-    // implicit lifetime annotations on the fmt() function, as it forces the
-    // formatter to live as long as the reference ('b), which however dies at
-    // the end of fmt().
-    f: &'b mut fmt::Formatter<'a>
+    buf: String
 }
 
-impl RegexFormatter<'_, '_> {
-    fn write(&mut self, next: RegexFmtCharClass) -> fmt::Result {
+impl RegexFormatter {
+    fn write(&mut self, next: RegexFmtCharClass) {
         let space = if !self.numbered {
             false
         } else if let RegexFmtCharClass::Ini = self.prev {
@@ -53,56 +49,55 @@ impl RegexFormatter<'_, '_> {
             }
         };
         if space {
-            write!(self.f, " ")?;
+            self.buf.push(' ');
         }
         match next {
-            RegexFmtCharClass::Ini => fmt::Result::Ok(()),
+            RegexFmtCharClass::Ini =>(),
             RegexFmtCharClass::Literal(c, i) => {
                 if !self.numbered {
-                    write!(self.f, "{}", c)
+                    self.buf.push(c);
                 } else {
-                    write!(self.f, "{}{}", c, i)
+                    self.buf = format!("{}{}{}", self.buf, c, i);
                 }
             }
             RegexFmtCharClass::OpenGroup(c)
                 | RegexFmtCharClass::ClosedGroup(c)
                 | RegexFmtCharClass::UnOp(c)
-                | RegexFmtCharClass::BinOp(c) => write!(self.f, "{}", c)
-        }?;
+                | RegexFmtCharClass::BinOp(c) => self.buf.push(c)
+        };
         self.prev = next;
-        fmt::Result::Ok(())
     }
 
-    fn fmt_child(&mut self, mom: &Regex, daughter: &Regex) -> fmt::Result {
+    fn fmt_child(&mut self, mom: &Regex, daughter: &Regex) {
         if mom.precedence() > daughter.precedence() {
-            self.write(RegexFmtCharClass::OpenGroup('('))?;
-            self.fmt(daughter)?;
-            self.write(RegexFmtCharClass::ClosedGroup(')'))
+            self.write(RegexFmtCharClass::OpenGroup('('));
+            self.fmt(daughter);
+            self.write(RegexFmtCharClass::ClosedGroup(')'));
         } else {
-            self.fmt(daughter)
+            self.fmt(daughter);
         }
     }
 
-    fn fmt(&mut self, re: &Regex) -> fmt::Result {
+    fn fmt(&mut self, re: &Regex) {
         match re {
             Regex::Null => self.write(RegexFmtCharClass::Literal('_', 0)),
             Regex::Literal(c, i) => self.write(RegexFmtCharClass::Literal(*c, *i)),
             Regex::Star(re2) => {
-                self.fmt_child(re, re2)?;
-                self.write(RegexFmtCharClass::UnOp('*'))
+                self.fmt_child(re, re2);
+                self.write(RegexFmtCharClass::UnOp('*'));
             },
             Regex::Plus(re2) => {
-                self.fmt_child(re, re2)?;
-                self.write(RegexFmtCharClass::UnOp('+'))
+                self.fmt_child(re, re2);
+                self.write(RegexFmtCharClass::UnOp('+'));
             },
             Regex::Concat(lhs, rhs) => {
-                self.fmt_child(re, lhs)?;
-                self.fmt_child(re, rhs)
+                self.fmt_child(re, lhs);
+                self.fmt_child(re, rhs);
             },
             Regex::Union(lhs, rhs) => {
-                self.fmt_child(re, lhs)?;
-                self.write(RegexFmtCharClass::BinOp('|'))?;
-                self.fmt_child(re, rhs)
+                self.fmt_child(re, lhs);
+                self.write(RegexFmtCharClass::BinOp('|'));
+                self.fmt_child(re, rhs);
             }
         }
     }
@@ -111,10 +106,23 @@ impl RegexFormatter<'_, '_> {
 impl fmt::Display for Regex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut refmt = RegexFormatter{
+            numbered: false, 
+            prev: RegexFmtCharClass::Ini,
+            buf: String::new()
+        };
+        refmt.fmt(self);
+        write!(f, "{}", refmt.buf)
+    }
+}
+
+impl Regex {
+    pub fn to_string_numbered(&self) -> String {
+        let mut refmt = RegexFormatter{
             numbered: true, 
             prev: RegexFmtCharClass::Ini,
-            f
+            buf: String::new()
         };
-        refmt.fmt(self)
+        refmt.fmt(self);
+        refmt.buf
     }
 }
