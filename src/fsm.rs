@@ -1,30 +1,37 @@
 mod dot_formatter;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub struct Transition {
-    pub label: char,
+pub struct BaseTransition<L> {
+    pub label: L,
     pub dest_id: i32
 }
 
-impl Transition {
+impl BaseTransition<char> {
     pub fn is_nonterminal(&self) -> bool {
         self.label.is_ascii_uppercase()
     }
 }
 
-#[derive(Debug)]
-pub struct State {
-    pub id: i32,
-    pub transitions: Vec<Transition>,
-    pub is_initial: bool,
-    pub is_final: bool
-}
+pub type Transition = BaseTransition<char>;
 
 #[derive(Debug)]
-pub struct Machine {
-    pub name: char,
-    pub states: Vec<State>
+pub struct BaseState<SL, TL> {
+    pub id: i32,
+    pub label: SL,
+    pub transitions: Vec<BaseTransition<TL>>,
+    pub is_initial: bool,
+    pub is_final: bool,
 }
+
+pub type State = BaseState<(), char>;
+
+#[derive(Debug)]
+pub struct BaseMachine<SL, TL> {
+    pub name: char,
+    pub states: Vec<BaseState<SL, TL>>
+}
+
+pub type Machine = BaseMachine<(), char>;
 
 impl Machine {
     pub fn try_lookup_state(&self, id: i32) -> Option<&State> {
