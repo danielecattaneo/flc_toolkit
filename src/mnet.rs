@@ -40,10 +40,10 @@ impl MachineNet {
         }
         for t in &state.transitions {
             if !t.is_nonterminal() {
-                res.insert(t.character);
+                res.insert(t.label);
             } else {
                 let nextnext = self.followers_impl(machine, t.dest_id, visited, next);
-                let rec_fol = self.followers_impl(t.character, 0, visited, &nextnext);
+                let rec_fol = self.followers_impl(t.label, 0, visited, &nextnext);
                 res.extend(rec_fol);
             }
         }

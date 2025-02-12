@@ -16,7 +16,7 @@ impl State {
         }
         let transitions: Vec<_> = self.transitions.iter().map(|t| {
             let dest_name = format!("{}{}", m_name, t.dest_id);
-            format!("  {} -> {} [label=\"{}\"];", name, dest_name, t.character)
+            format!("  {} -> {} [label=\"{}\"];", name, dest_name, t.label)
         }).collect();
         if self.is_final {
             res.push(format!("  sink{} [shape=plain,label=\" \"];", name));

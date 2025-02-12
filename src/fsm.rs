@@ -2,13 +2,13 @@ mod dot_formatter;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Transition {
-    pub character: char,
+    pub label: char,
     pub dest_id: i32
 }
 
 impl Transition {
     pub fn is_nonterminal(&self) -> bool {
-        self.character.is_ascii_uppercase()
+        self.label.is_ascii_uppercase()
     }
 }
 

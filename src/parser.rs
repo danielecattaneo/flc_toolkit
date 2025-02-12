@@ -74,11 +74,11 @@ impl Parser {
             } else if let Some(_) = accept!(self, TokenValue::KwFinal) {
                 expect!(self, TokenValue::Semi, "expected semicolon");
                 state.is_final = true;
-            } else if let token!(TokenValue::Ident(character)) = self.lookahead {
+            } else if let token!(TokenValue::Ident(label)) = self.lookahead {
                 self.advance();
                 expect!(self, TokenValue::RArrow, "expected -> after transition character");
                 expect!(self, TokenValue::Number(dest_id), "expected transition destination state", {
-                    let trans = Transition{character, dest_id};
+                    let trans = Transition{label, dest_id};
                     state.transitions.push(trans);
                 });
                 expect!(self, TokenValue::Semi, "expected semicolon");

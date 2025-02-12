@@ -93,8 +93,8 @@ fn closure(state: &mut PilotState, net: &MachineNet) {
             }
             let ini = net.followers(c.machine, t.dest_id, HashSet::from([c.lookahead]));
             for ch in ini {
-                let dest_state = net.lookup_state(t.character, 0);
-                let c2 = Candidate{machine:t.character, state:0, lookahead:ch, is_final:dest_state.is_final};
+                let dest_state = net.lookup_state(t.label, 0);
+                let c2 = Candidate{machine:t.label, state:0, lookahead:ch, is_final:dest_state.is_final};
                 if !state.candidates.contains(&c2) {
                     state.candidates.push(c2);
                 }
@@ -109,7 +109,7 @@ fn collect_transitions(state: &PilotState, net: &MachineNet) -> Vec<char> {
     for c in &state.candidates {
         let mstate = net.lookup_state(c.machine, c.state);
         for t in &mstate.transitions {
-            res.insert(t.character);
+            res.insert(t.label);
         }
     }
     let mut vec_res = Vec::from_iter(res.into_iter());
@@ -120,7 +120,7 @@ fn collect_transitions(state: &PilotState, net: &MachineNet) -> Vec<char> {
 fn shift_candidate(c: &Candidate, net: &MachineNet, next: char) -> Option<Candidate> {
     let mstate = net.lookup_state(c.machine, c.state);
     for t in &mstate.transitions {
-        if t.character == next {
+        if t.label == next {
             let dest_state = net.lookup_state(c.machine, t.dest_id);
             return Some(Candidate{machine:c.machine, state:t.dest_id, lookahead:c.lookahead, is_final:dest_state.is_final});
         }
