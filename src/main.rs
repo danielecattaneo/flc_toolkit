@@ -1,4 +1,5 @@
 mod lexer;
+mod regex;
 mod parser;
 mod fsm;
 mod mnet;
@@ -10,6 +11,7 @@ use std::process::ExitCode;
 pub use crate::elr_pilot::*;
 pub use crate::lexer::*;
 pub use crate::parser::*;
+pub use crate::regex::parser::*;
 
 fn help() {
     let args: Vec<_> = std::env::args().collect();
@@ -66,6 +68,19 @@ fn cmd_pilot(args: &[String]) -> Option<&[String]> {
     return Some(&args[1..]);
 }
 
+fn cmd_echo_regex(args: &[String]) -> Option<&[String]> {
+    if args.len() < 1 {
+        eprintln!("error: missing argument to \"echo_regex\" command");
+        return None;
+    }
+    let re_str = &args[0];
+    let mut pars = RegexParser::new(re_str);
+    if let Some(re) = pars.parse_regex() {
+        println!("{}", re);
+    }
+    return Some(&args[1..]);
+}
+
 fn main() -> ExitCode {
     let args: Vec<_> = std::env::args().collect();
     if args.len() == 1 {
@@ -81,6 +96,8 @@ fn main() -> ExitCode {
             cmd_pilot(&args_left[1..])
         } else if cmd == "echo_mnet" {
             cmd_echo_mnet(&args_left[1..])
+        } else if cmd == "echo_regex" {
+            cmd_echo_regex(&args_left[1..])
         } else if cmd == "help" || cmd == "-h" || cmd == "--help" {
             eprintln!("help requested");
             help();
