@@ -65,7 +65,7 @@ impl Parser {
     fn parse_state(&mut self) -> Option<State> {
         expect!(self, TokenValue::KwState, "expected a state");
         let id = expect!(self, TokenValue::Number(num), "expected the state identifier", { num });
-        let mut state = State{id, label:(), transitions:vec![], is_initial:false, is_final:false};
+        let mut state = State{id, label:StateLabel{ id, m_name:'?' }, transitions:vec![], is_initial:false, is_final:false};
         expect!(self, TokenValue::LBrace, "expected a state body enclosed in {}");
         loop {
             if let Some(_) = accept!(self, TokenValue::KwInitial) {
@@ -103,7 +103,8 @@ impl Parser {
         let mut machine = Machine{name, states: vec![]};
         expect!(self, TokenValue::LBrace, "expected a machine body enclosed by {}");
         while let token!(TokenValue::KwState) = self.lookahead {
-            if let Some(state) = self.parse_state() {
+            if let Some(mut state) = self.parse_state() {
+                state.label.m_name = name;
                 machine.states.push(state);
             } else {
                 return None;

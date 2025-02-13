@@ -1,5 +1,9 @@
 mod dot_formatter;
 
+pub trait DotFormat {
+    fn to_dot(&self, _: bool) -> String;
+}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct BaseTransition<L> {
     pub label: L,
@@ -15,6 +19,12 @@ impl BaseTransition<char> {
 pub type Transition = BaseTransition<char>;
 
 #[derive(Debug)]
+pub struct StateLabel {
+    pub id: i32,
+    pub m_name: char
+}
+
+#[derive(Debug)]
 pub struct BaseState<SL, TL> {
     pub id: i32,
     pub label: SL,
@@ -23,7 +33,7 @@ pub struct BaseState<SL, TL> {
     pub is_final: bool,
 }
 
-pub type State = BaseState<(), char>;
+pub type State = BaseState<StateLabel, char>;
 
 #[derive(Debug)]
 pub struct BaseMachine<SL, TL> {
@@ -31,7 +41,7 @@ pub struct BaseMachine<SL, TL> {
     pub states: Vec<BaseState<SL, TL>>
 }
 
-pub type Machine = BaseMachine<(), char>;
+pub type Machine = BaseMachine<StateLabel, char>;
 
 impl<SL, TL> BaseMachine<SL, TL> {
     pub fn new(name: char) -> BaseMachine<SL, TL> {

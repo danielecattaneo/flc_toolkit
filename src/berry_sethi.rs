@@ -12,6 +12,20 @@ pub struct BSStateLabel {
 pub type BSState = BaseState<BSStateLabel, char>;
 pub type BSMachine = BaseMachine<BSStateLabel, char>;
 
+impl DotFormat for BSStateLabel {
+    fn to_dot(&self, _: bool) -> String {
+        let mut l: Vec<_> = self.terminals.iter().collect();
+        l.sort();
+        let mut ll: Vec<_> = l.into_iter().map(| &(c, i) | {
+            format!("{}<sub>{}</sub>", c, i)
+        }).collect();
+        if self.is_final {
+            ll.push("⊣".to_string());
+        }
+        ll.join(",")
+    }
+}
+
 impl Regex {
     pub fn numbered_followers(&self) -> HashMap<(char, usize), HashSet<(char, usize)>> {
         let mut res: HashMap<(char, usize), HashSet<(char, usize)>> = HashMap::new();
@@ -44,7 +58,7 @@ impl BSState {
         let terminals = dig.iter().filter_map(| ((a, i), (d, j)) | {
             if my_terminals.contains(&(*a, *i)) { Some((*d, *j)) } else { None }
         });
-        let is_final = fin.iter().any(| (d, _) | *d == c);
+        let is_final = my_terminals.iter().any(| (d, i) | fin.contains(&(*d, *i)) );
         BSStateLabel{ terminals: terminals.collect(), is_final }
     }
 }
