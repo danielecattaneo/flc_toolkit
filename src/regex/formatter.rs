@@ -54,7 +54,7 @@ impl RegexFormatter {
         match next {
             RegexFmtCharClass::Ini =>(),
             RegexFmtCharClass::Literal(c, i) => {
-                if !self.numbered {
+                if !self.numbered || c == '_' {
                     self.buf.push(c);
                 } else {
                     self.buf = format!("{}{}{}", self.buf, c, i);
