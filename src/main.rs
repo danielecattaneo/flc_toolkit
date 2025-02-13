@@ -4,11 +4,13 @@ mod parser;
 mod fsm;
 mod mnet;
 mod elr_pilot;
+mod berry_sethi;
 
 use std::path::Path;
 use std::process::ExitCode;
 
 pub use crate::elr_pilot::*;
+pub use crate::berry_sethi::*;
 pub use crate::lexer::*;
 pub use crate::parser::*;
 pub use crate::regex::parser::*;

@@ -33,12 +33,20 @@ pub struct BaseMachine<SL, TL> {
 
 pub type Machine = BaseMachine<(), char>;
 
-impl Machine {
-    pub fn try_lookup_state(&self, id: i32) -> Option<&State> {
+impl<SL, TL> BaseMachine<SL, TL> {
+    pub fn new(name: char) -> BaseMachine<SL, TL> {
+        BaseMachine::<SL, TL>{ name, states: Vec::new() }
+    }
+
+    pub fn try_lookup_state(&self, id: i32) -> Option<&BaseState<SL, TL>> {
         self.states.iter().find(|s| s.id == id)
     }
 
-    pub fn lookup_state(&self, id: i32) -> &State {
+    pub fn lookup_state(&self, id: i32) -> &BaseState<SL, TL> {
         self.try_lookup_state(id).expect("state does not exist")
+    }
+
+    pub fn lookup_state_mut(&mut self, id: i32) -> &mut BaseState<SL, TL> {
+        self.states.iter_mut().find(|s| s.id == id).expect("state does not exist")
     }
 }
