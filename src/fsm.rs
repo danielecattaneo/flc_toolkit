@@ -135,7 +135,7 @@ impl NumMachine {
             }
             visited.insert(sid);
             let s = self.lookup_state(sid);
-            if s.is_initial {
+            if s.is_final {
                 return true;
             }
             for t in &s.transitions {
