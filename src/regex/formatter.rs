@@ -14,7 +14,7 @@ enum RegexFmtCharClass {
 impl Regex {
     fn precedence(&self) -> i32 {
         match self {
-            Regex::Null | Regex::Literal(_, _) => 0,
+            Regex::Null | Regex::Literal(_) => 0,
             Regex::Star(_) | Regex::Plus(_) => -1,
             Regex::Concat(_, _) => -2,
             Regex::Union(_, _) => -3
@@ -80,8 +80,12 @@ impl RegexFormatter {
 
     fn fmt(&mut self, re: &Regex) {
         match re {
-            Regex::Null => self.write(RegexFmtCharClass::Literal('_', 0)),
-            Regex::Literal(c, i) => self.write(RegexFmtCharClass::Literal(*c, *i)),
+            Regex::Null => {
+                self.write(RegexFmtCharClass::Literal('_', 0))
+            }
+            Regex::Literal(t) => {
+                self.write(RegexFmtCharClass::Literal(t.c, t.i))
+            }
             Regex::Star(re2) => {
                 self.fmt_child(re, re2);
                 self.write(RegexFmtCharClass::UnOp('*'));

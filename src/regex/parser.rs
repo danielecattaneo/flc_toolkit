@@ -157,7 +157,7 @@ impl RegexParser<'_> {
         } else if let token!(RegexTokenValue::Literal(c)) = self.lookahead {
             self.advance();
             self.lit_counter += 1;
-            Some(Regex::Literal(c, self.lit_counter))
+            Some(Regex::Literal(NumTerm::new(c, self.lit_counter)))
         } else {
             self.emit_error("expected a character or a group");
             None

@@ -5,7 +5,7 @@ use crate::fsm::*;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct BSStateLabel {
-    terminals: HashSet<(char, usize)>,
+    terminals: NumTermSet,
     is_final: bool
 }
 
@@ -16,8 +16,8 @@ impl DotFormat for BSStateLabel {
     fn to_dot(&self, _: bool) -> String {
         let mut l: Vec<_> = self.terminals.iter().collect();
         l.sort();
-        let mut ll: Vec<_> = l.into_iter().map(| &(c, i) | {
-            format!("{}<sub>{}</sub>", c, i)
+        let mut ll: Vec<_> = l.into_iter().map(| &t | {
+            format!("{}<sub>{}</sub>", t.c, t.i)
         }).collect();
         if self.is_final {
             ll.push("⊣".to_string());
@@ -26,15 +26,16 @@ impl DotFormat for BSStateLabel {
     }
 }
 
+pub type NumFollowersMap = HashMap<NumTerm, NumTermSet>;
+
 impl Regex {
-    pub fn numbered_followers(&self) -> HashMap<(char, usize), HashSet<(char, usize)>> {
-        let mut res: HashMap<(char, usize), HashSet<(char, usize)>> = HashMap::new();
-        for (c, i) in self.all_numbered() {
-            res.insert((c, i), HashSet::new());
+    pub fn numbered_followers(&self) -> NumFollowersMap {
+        let mut res = NumFollowersMap::new();
+        for t in self.all_numbered() {
+            res.insert(t, NumTermSet::new());
         }
-        for ((c, i), (d, j)) in self.numbered_digrams() {
-            let set = res.get_mut(&(c, i)).unwrap();
-            set.insert((d, j));
+        for (t, f) in self.numbered_digrams() {
+            res.get_mut(&t).unwrap().insert(f);
         }
         res
     }
@@ -47,18 +48,18 @@ impl BSState {
     }
 
     fn collect_transitions(&self) -> Vec<char> {
-        let mut res: Vec<char> = self.label.terminals.iter().map(| (c, _) | *c).collect();
+        let mut res: Vec<char> = self.label.terminals.iter().map(|t| t.c).collect();
         res.sort();
         res.dedup();
         res
     }
 
-    fn shift(&self, c: char, dig: &HashSet<((char, usize), (char, usize))>, fin: &HashSet<(char, usize)>) -> BSStateLabel {
-        let my_terminals: HashSet<_> = self.label.terminals.iter().filter(| (a, _) | *a == c).collect();
-        let terminals = dig.iter().filter_map(| ((a, i), (d, j)) | {
-            if my_terminals.contains(&(*a, *i)) { Some((*d, *j)) } else { None }
+    fn shift(&self, c: char, dig: &NumDigramsSet, fin: &NumTermSet) -> BSStateLabel {
+        let my_terminals: HashSet<_> = self.label.terminals.iter().filter(|t| t.c == c).collect();
+        let terminals = dig.iter().filter_map(|(t, f)| {
+            if my_terminals.contains(t) { Some(*f) } else { None }
         });
-        let is_final = my_terminals.iter().any(| (d, i) | fin.contains(&(*d, *i)) );
+        let is_final = my_terminals.iter().any(|t| fin.contains(t));
         BSStateLabel{ terminals: terminals.collect(), is_final }
     }
 }
@@ -83,9 +84,10 @@ pub fn berry_sethi(re: &Regex) -> BSMachine {
     let ini = re.numbered_initials();
     let dig = re.numbered_digrams();
     let fin = re.numbered_finals();
+    let null = re.nullable();
 
     let mut res = BSMachine::new('M');
-    let init_label = BSStateLabel{ terminals: ini, is_final: re.nullable() };
+    let init_label = BSStateLabel{ terminals: ini, is_final: null };
 
     let mut worklist = VecDeque::from([res.insert(BSState::new(init_label, true))]);
     let mut visited: HashSet<i32> = HashSet::new();
