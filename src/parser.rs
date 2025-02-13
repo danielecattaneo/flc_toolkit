@@ -90,7 +90,7 @@ impl Parser {
         Some(state)
     }
 
-    fn parse_machine(&mut self) -> Option<Machine> {
+    pub fn parse_machine(&mut self) -> Option<Machine> {
         expect!(self, TokenValue::KwMachine, "expected a machine");
         let name = expect!(self, TokenValue::Ident(name), "expected a machine name", {
             if !name.is_ascii_uppercase() {

@@ -2,7 +2,17 @@ use crate::fsm::*;
 
 impl DotFormat for char {
     fn to_dot(&self, _: bool) -> String {
-        format!("{}", self)
+        format!("\"{}\"", self)
+    }
+}
+
+impl DotFormat for NumTerm {
+    fn to_dot(&self, _: bool) -> String {
+        if self.c == '_' {
+            format!("ε")
+        } else {
+            format!("<{}<sub>{}</sub>>", self.c, self.i)
+        }
     }
 }
 
@@ -18,7 +28,7 @@ impl DotFormat for StateLabel {
 
 impl<SL: DotFormat, TL: DotFormat> BaseState<SL, TL> {
     fn to_dot(&self, m_name: char, detailed: bool) -> String {
-        let name = format!("{}{}", m_name, self.id);
+        let name = format!("n{}{}", m_name, self.id);
         let label = self.label.to_dot(detailed);
 
         let mut res: Vec<String> = Vec::new();
@@ -27,8 +37,8 @@ impl<SL: DotFormat, TL: DotFormat> BaseState<SL, TL> {
             res.push(format!("  init{} -> {};", m_name, name));
         }
         let transitions: Vec<_> = self.transitions.iter().map(|t| {
-            let dest_name = format!("{}{}", m_name, t.dest_id);
-            format!("  {} -> {} [label=\"{}\"];", name, dest_name, t.label.to_dot(detailed))
+            let dest_name = format!("n{}{}", m_name, t.dest_id);
+            format!("  {} -> {} [label={}];", name, dest_name, t.label.to_dot(detailed))
         }).collect();
         if self.is_final {
             res.push(format!("  sink{} [shape=plain,label=\" \"];", name));

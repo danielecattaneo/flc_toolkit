@@ -1,3 +1,4 @@
+mod reg_lang;
 mod lexer;
 mod regex;
 mod parser;
@@ -13,6 +14,7 @@ pub use crate::elr_pilot::*;
 pub use crate::berry_sethi::*;
 pub use crate::lexer::*;
 pub use crate::parser::*;
+pub use crate::reg_lang::*;
 pub use crate::regex::parser::*;
 
 fn help() {
@@ -85,36 +87,34 @@ fn cmd_echo_regex(args: &[String]) -> Option<&[String]> {
 
 fn cmd_berry_sethi(args: &[String]) -> Option<&[String]> {
     if args.len() < 1 {
-        eprintln!("error: missing argument to \"echo_regex\" command");
+        eprintln!("error: missing argument to \"berry_sethi\" command");
         return None;
     }
     let re_str = &args[0];
     let mut pars = RegexParser::new(re_str);
     if let Some(re) = pars.parse_regex() {
         eprintln!("{}", re.to_string_numbered());
-        
-        let mut ini: Vec<_> = re.numbered_initials().into_iter().map(|t| format!("{}", t)).collect();
-        ini.sort();
-        if re.nullable() {
-            ini.push("⊣".to_string());
-        }
-        eprintln!("Ini = {{{}}}", ini.join(", "));
-
-        let fin = re.numbered_finals();
-
-        let mut fin_tmp: Vec<_> = re.numbered_followers().iter().map(|(t, fol)| {
-            let mut str_fol: Vec<_> = fol.into_iter().map(|t| format!("{}", t)).collect();
-            str_fol.sort();
-            if fin.contains(t) {
-                str_fol.push("⊣".to_string());
-            }
-            (t.i, format!("Fol({}) = {{{}}}", t, str_fol.join(", ")))
-        }).collect();
-        fin_tmp.sort();
-        let fin: Vec<_> = fin_tmp.iter().map(|(_, s)| s.clone()).collect();
-        eprintln!("{}", fin.join("\n"));
-        
+        re.dump_local_sets();
         println!("{}", berry_sethi(&re).to_dot(false));
+    }
+    return Some(&args[1..]);
+}
+
+fn cmd_berry_sethi_fsm(args: &[String]) -> Option<&[String]> {
+    if args.len() < 1 {
+        eprintln!("error: missing argument to \"berry_sethi_fsm\" command");
+        return None;
+    }
+    let file = &args[0];
+    let lex = Lexer::from_path(Path::new(file));
+    let mut pars = Parser::new(lex);
+    if let Some(fsm) = pars.parse_machine() {
+        let num_fsm = NumMachine::from_machine(fsm);
+        num_fsm.dump_local_sets();
+        println!("digraph {{\n  rankdir=\"LR\";");
+        println!("{}", num_fsm.to_dot_2(false, false));
+        println!("{}", berry_sethi(&num_fsm).to_dot_2(false, false));
+        println!("}}");
     }
     return Some(&args[1..]);
 }
@@ -138,6 +138,8 @@ fn main() -> ExitCode {
             cmd_echo_regex(&args_left[1..])
         } else if cmd == "berry_sethi" {
             cmd_berry_sethi(&args_left[1..])
+        } else if cmd == "berry_sethi_fsm" {
+            cmd_berry_sethi_fsm(&args_left[1..])
         } else if cmd == "help" || cmd == "-h" || cmd == "--help" {
             eprintln!("help requested");
             help();

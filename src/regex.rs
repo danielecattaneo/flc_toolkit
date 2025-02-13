@@ -1,29 +1,9 @@
 pub mod parser;
 mod formatter;
 
+use crate::reg_lang::*;
+
 use std::collections::HashSet;
-use std::fmt;
-
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
-pub struct NumTerm {
-    pub c: char,
-    pub i: usize
-}
-
-impl NumTerm {
-    pub fn new(c: char, i: usize) -> NumTerm {
-        NumTerm{c, i}
-    }
-}
-
-impl fmt::Display for NumTerm {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}{}", self.c, self.i)
-    }
-}
-
-pub type NumTermSet = HashSet<NumTerm>;
-pub type NumDigramsSet = HashSet<(NumTerm, NumTerm)>;
 
 #[derive(Debug)]
 pub enum Regex {
@@ -35,18 +15,8 @@ pub enum Regex {
     Plus(Box<Regex>)
 }
 
-fn set_prod(a: &NumTermSet, b: &NumTermSet) -> NumDigramsSet {
-    let mut res = NumDigramsSet::new();
-    for &ia in a {
-        for &ib in b {
-            res.insert((ia, ib));
-        }
-    }
-    res
-}
-
-impl Regex {
-    pub fn nullable(&self) -> bool {
+impl NumLocalSets for Regex {
+    fn nullable(&self) -> bool {
         match self {
             Regex::Null => true,
             Regex::Literal(_) => false,
@@ -57,7 +27,7 @@ impl Regex {
         }
     }
 
-    pub fn all_numbered(&self) -> NumTermSet {
+    fn all_numbered(&self) -> NumTermSet {
         match self {
             Regex::Null => HashSet::new(),
             Regex::Literal(t) => NumTermSet::from([*t]),
@@ -72,7 +42,7 @@ impl Regex {
         }
     }
 
-    pub fn numbered_initials(&self) -> NumTermSet {
+    fn numbered_initials(&self) -> NumTermSet {
         match self {
             Regex::Null => HashSet::new(),
             Regex::Literal(t) => NumTermSet::from([*t]),
@@ -93,7 +63,7 @@ impl Regex {
         }
     }
 
-    pub fn numbered_finals(&self) -> NumTermSet {
+    fn numbered_finals(&self) -> NumTermSet {
         match self {
             Regex::Null => HashSet::new(),
             Regex::Literal(t) => NumTermSet::from([*t]),
@@ -114,7 +84,7 @@ impl Regex {
         }
     }
 
-    pub fn numbered_digrams(&self) -> NumDigramsSet {
+    fn numbered_digrams(&self) -> NumDigramsSet {
         match self {
             Regex::Null | Regex::Literal(_) => NumDigramsSet::new(),
             Regex::Union(r1, r2) => {

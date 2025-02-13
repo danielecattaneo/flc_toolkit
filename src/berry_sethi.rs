@@ -1,6 +1,6 @@
 use std::collections::*;
 
-use crate::regex::*;
+use crate::reg_lang::*;
 use crate::fsm::*;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -23,21 +23,6 @@ impl DotFormat for BSStateLabel {
             ll.push("⊣".to_string());
         }
         ll.join(",")
-    }
-}
-
-pub type NumFollowersMap = HashMap<NumTerm, NumTermSet>;
-
-impl Regex {
-    pub fn numbered_followers(&self) -> NumFollowersMap {
-        let mut res = NumFollowersMap::new();
-        for t in self.all_numbered() {
-            res.insert(t, NumTermSet::new());
-        }
-        for (t, f) in self.numbered_digrams() {
-            res.get_mut(&t).unwrap().insert(f);
-        }
-        res
     }
 }
 
@@ -80,13 +65,8 @@ impl BSMachine {
     }
 }
 
-pub fn berry_sethi(re: &Regex) -> BSMachine {
-    let ini = re.numbered_initials();
-    let dig = re.numbered_digrams();
-    let fin = re.numbered_finals();
-    let null = re.nullable();
-
-    let mut res = BSMachine::new('M');
+fn berry_sethi_impl(ini: NumTermSet, dig: NumDigramsSet, fin: NumTermSet, null: bool) -> BSMachine {
+    let mut res = BSMachine::new('b');
     let init_label = BSStateLabel{ terminals: ini, is_final: null };
 
     let mut worklist = VecDeque::from([res.insert(BSState::new(init_label, true))]);
@@ -112,4 +92,12 @@ pub fn berry_sethi(re: &Regex) -> BSMachine {
         res.lookup_state_mut(state_id).transitions = xions;
     }
     res
+}
+
+pub fn berry_sethi<T: NumLocalSets>(x: &T) -> BSMachine {
+    let ini = x.numbered_initials();
+    let dig = x.numbered_digrams();
+    let fin = x.numbered_finals();
+    let null = x.nullable();
+    berry_sethi_impl(ini, dig, fin, null)
 }
