@@ -5,7 +5,7 @@ use crate::reg_lang::*;
 
 use std::collections::HashSet;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Regex {
     Null,
     Literal(NumTerm),

@@ -100,7 +100,7 @@ impl Parser {
                 name
             }
         });
-        let mut machine = Machine{name, states: vec![]};
+        let mut machine = Machine{label: name, states: vec![]};
         expect!(self, TokenValue::LBrace, "expected a machine body enclosed by {}");
         while let token!(TokenValue::KwState) = self.lookahead {
             if let Some(mut state) = self.parse_state() {

@@ -12,7 +12,7 @@ impl MachineNet {
 
     fn validate_start(&self) -> bool {
         // There must be a S-named machine
-        if let None = self.machines.iter().find(|m| m.name == 'S') {
+        if let None = self.machines.iter().find(|m| m.label == 'S') {
             eprintln!("error: axiom (machine named S) missing");
             false
         } else {
@@ -27,7 +27,7 @@ impl MachineNet {
             for s in &m.states {
                 for ts in &s.transitions {
                     if ts.dest_id == 0 {
-                        eprintln!("error: machine {} re-entrant because of transition {}{} -{}-> 0{}", m.name, s.id, m.name, ts.label, m.name);
+                        eprintln!("error: machine {} re-entrant because of transition {}{} -{}-> 0{}", m.label, s.id, m.label, ts.label, m.label);
                         res = false;
                     }
                 }
@@ -41,7 +41,7 @@ impl MachineNet {
         let mut res = true;
         for m in &self.machines {
             if m.states.len() == 0 {
-                eprintln!("error: machine {} has zero states", m.name);
+                eprintln!("error: machine {} has zero states", m.label);
                 res = false;
             }
         }
@@ -54,10 +54,10 @@ impl MachineNet {
         for m in &self.machines {
             for s in &m.states {
                 if s.is_initial && s.id != 0 {
-                    eprintln!("error: state {}{} cannot be initial", s.id, m.name);
+                    eprintln!("error: state {}{} cannot be initial", s.id, m.label);
                     res = false;
                 } else if s.id == 0 && !s.is_initial {
-                    eprintln!("error: state {}{} must be initial", s.id, m.name);
+                    eprintln!("error: state {}{} must be initial", s.id, m.label);
                     res = false;
                 }
             }
@@ -69,7 +69,7 @@ impl MachineNet {
         let mut res = true;
         for m in &self.machines {
             if !m.states.iter().any(|s| s.is_final) {
-                eprintln!("error: no final state in machine {}", m.name);
+                eprintln!("error: no final state in machine {}", m.label);
                 res = false;
             }
         }
@@ -82,18 +82,18 @@ impl MachineNet {
             for s in &m.states {
                 for (i, t) in s.transitions.iter().enumerate() {
                     if let None = m.try_lookup_state(t.dest_id) {
-                        eprintln!("error: transition {}{} -{}-> {}{} goes to a non-existent state", s.id, m.name, t.label, t.dest_id, m.name);
+                        eprintln!("error: transition {}{} -{}-> {}{} goes to a non-existent state", s.id, m.label, t.label, t.dest_id, m.label);
                         res = false;
                     }
                     if t.is_nonterminal() {
                         if let None = self.try_lookup_machine(t.label) {
-                            eprintln!("error: transition {}{} -{}-> ... has an invalid nonterminal label", s.id, m.name, t.label);
+                            eprintln!("error: transition {}{} -{}-> ... has an invalid nonterminal label", s.id, m.label, t.label);
                             res = false;
                         }
                     }
                     for tj in &s.transitions[i+1..] {
                         if t.label == tj.label {
-                            eprintln!("error: multiple transitions {}{} -{}-> ...", s.id, m.name, t.label);
+                            eprintln!("error: multiple transitions {}{} -{}-> ...", s.id, m.label, t.label);
                             res = false;
                         }
                     }

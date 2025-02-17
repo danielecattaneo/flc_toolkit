@@ -12,7 +12,7 @@ pub struct MachineNet {
 
 impl MachineNet {
     pub fn try_lookup_machine(&self, machine: char) -> Option<&Machine> {
-        self.machines.iter().find(|m| m.name == machine)
+        self.machines.iter().find(|m| m.label == machine)
     }
 
     pub fn lookup_machine(&self, machine: char) -> &Machine {

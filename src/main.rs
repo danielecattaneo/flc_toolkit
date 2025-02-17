@@ -6,12 +6,14 @@ mod fsm;
 mod mnet;
 mod elr_pilot;
 mod berry_sethi;
+mod bmc;
 
 use std::path::Path;
 use std::process::ExitCode;
 
 pub use crate::elr_pilot::*;
 pub use crate::berry_sethi::*;
+pub use crate::bmc::*;
 pub use crate::lexer::*;
 pub use crate::parser::*;
 pub use crate::reg_lang::*;
@@ -119,6 +121,30 @@ fn cmd_berry_sethi_fsm(args: &[String]) -> Option<&[String]> {
     return Some(&args[1..]);
 }
 
+fn cmd_bmc(args: &[String]) -> Option<&[String]> {
+    if args.len() < 1 {
+        eprintln!("error: missing argument to \"bmc\" command");
+        return None;
+    }
+    let file = &args[0];
+    let lex = Lexer::from_path(Path::new(file));
+    let mut pars = Parser::new(lex);
+    if let Some(fsm) = pars.parse_machine() {
+        let mut bmc_fsm = BMCMachine::from_machine(fsm);
+        println!("digraph {{\n  rankdir=\"LR\";");
+        bmc_fsm.merge_parallel_transitions();
+        println!("{}", bmc_fsm.to_dot_2(false, false));
+        while let Some(sid) = bmc_fsm.choose_best_state() {
+            eprintln!("Eliminating state {}", sid);
+            bmc_fsm.eliminate(sid);
+            bmc_fsm.merge_parallel_transitions();
+            println!("{}", bmc_fsm.to_dot_2(false, false));
+        }
+        println!("}}");
+    }
+    return Some(&args[1..]);
+}
+
 fn main() -> ExitCode {
     let args: Vec<_> = std::env::args().collect();
     if args.len() == 1 {
@@ -140,6 +166,8 @@ fn main() -> ExitCode {
             cmd_berry_sethi(&args_left[1..])
         } else if cmd == "berry_sethi_fsm" {
             cmd_berry_sethi_fsm(&args_left[1..])
+        } else if cmd == "bmc" {
+            cmd_bmc(&args_left[1..])
         } else if cmd == "help" || cmd == "-h" || cmd == "--help" {
             eprintln!("help requested");
             help();

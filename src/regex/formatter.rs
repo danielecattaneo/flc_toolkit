@@ -1,4 +1,4 @@
-use crate::regex::*;
+use crate::{regex::*, DotFormat};
 
 use std::fmt;
 
@@ -22,15 +22,25 @@ impl Regex {
     }
 }
 
+#[derive(PartialEq, Eq)]
+enum RegexFmtStyle {
+    Plain,
+    Numbered,
+    Dot,
+    DotNumbered
+}
+
+use RegexFmtStyle::*;
+
 struct RegexFormatter {
-    numbered: bool,
+    style: RegexFmtStyle,
     prev: RegexFmtCharClass,
     buf: String
 }
 
 impl RegexFormatter {
     fn write(&mut self, next: RegexFmtCharClass) {
-        let space = if !self.numbered {
+        let space = if self.style == Plain || self.style == Dot {
             false
         } else if let RegexFmtCharClass::Ini = self.prev {
             false
@@ -54,10 +64,19 @@ impl RegexFormatter {
         match next {
             RegexFmtCharClass::Ini =>(),
             RegexFmtCharClass::Literal(c, i) => {
-                if !self.numbered || c == '_' {
-                    self.buf.push(c);
-                } else {
-                    self.buf = format!("{}{}{}", self.buf, c, i);
+                match self.style {
+                    Plain => self.buf.push(c),
+                    Numbered => if c == '_' { 
+                        self.buf.push(c);
+                    } else {
+                        self.buf = format!("{}{}{}", self.buf, c, i);
+                    },
+                    Dot => self.buf.push(if c == '_' { 'ε' } else { c }),
+                    DotNumbered => if c == '_' {
+                        self.buf.push('ε')
+                    } else {
+                        self.buf = format!("{}{}<sub>{}</sub>", self.buf, c, i)
+                    }
                 }
             }
             RegexFmtCharClass::OpenGroup(c)
@@ -110,7 +129,7 @@ impl RegexFormatter {
 impl fmt::Display for Regex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut refmt = RegexFormatter{
-            numbered: false, 
+            style: Plain, 
             prev: RegexFmtCharClass::Ini,
             buf: String::new()
         };
@@ -122,11 +141,23 @@ impl fmt::Display for Regex {
 impl Regex {
     pub fn to_string_numbered(&self) -> String {
         let mut refmt = RegexFormatter{
-            numbered: true, 
+            style: Numbered, 
             prev: RegexFmtCharClass::Ini,
             buf: String::new()
         };
         refmt.fmt(self);
         refmt.buf
+    }
+}
+
+impl DotFormat for Regex {
+    fn to_dot(&self, detailed: bool) -> String {
+        let mut refmt = RegexFormatter{
+            style: if detailed { DotNumbered } else { Dot },
+            prev: RegexFmtCharClass::Ini,
+            buf: String::new()
+        };
+        refmt.fmt(self);
+        format!("<{}>", refmt.buf)
     }
 }

@@ -1,0 +1,6 @@
+machine A {
+    state 0 { initial; a -> 1; b -> 2; }
+    state 1 { b -> 1; a -> 2; }
+    state 2 { final; a -> 3; }
+    state 3 { a -> 0; }
+}

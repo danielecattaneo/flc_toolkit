@@ -10,7 +10,7 @@ pub struct BSStateLabel {
 }
 
 pub type BSState = BaseState<BSStateLabel, char>;
-pub type BSMachine = BaseMachine<BSStateLabel, char>;
+pub type BSMachine = BaseMachine<char, BSStateLabel, char>;
 
 impl DotFormat for BSStateLabel {
     fn to_dot(&self, _: bool) -> String {

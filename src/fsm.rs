@@ -45,16 +45,16 @@ pub struct BaseState<SL, TL> {
 pub type State = BaseState<StateLabel, char>;
 
 #[derive(Debug)]
-pub struct BaseMachine<SL, TL> {
-    pub name: char,
+pub struct BaseMachine<ML, SL, TL> {
+    pub label: ML,
     pub states: Vec<BaseState<SL, TL>>
 }
 
-pub type Machine = BaseMachine<StateLabel, char>;
+pub type Machine = BaseMachine<char, StateLabel, char>;
 
-impl<SL, TL> BaseMachine<SL, TL> {
-    pub fn new(name: char) -> BaseMachine<SL, TL> {
-        BaseMachine::<SL, TL>{ name, states: Vec::new() }
+impl<ML, SL, TL> BaseMachine<ML, SL, TL> {
+    pub fn new(name: ML) -> BaseMachine<ML, SL, TL> {
+        BaseMachine::<ML, SL, TL>{ label: name, states: Vec::new() }
     }
 
     pub fn try_lookup_state(&self, id: i32) -> Option<&BaseState<SL, TL>> {
@@ -93,7 +93,7 @@ impl<SL, TL> BaseMachine<SL, TL> {
 }
 
 pub type NumTransition = BaseTransition<NumTerm>;
-pub type NumMachine = BaseMachine<StateLabel, NumTerm>;
+pub type NumMachine = BaseMachine<char, StateLabel, NumTerm>;
 
 impl NumTransition {
     pub fn is_epsilon(&self) -> bool {
@@ -123,7 +123,7 @@ impl NumMachine {
                 is_final: old_state.is_final,
                 is_initial: old_state.is_initial}
         });
-        NumMachine{ name: old_m.name, states: states.collect() }
+        NumMachine{ label: old_m.label, states: states.collect() }
     }
 
     fn nullable_from(&self, active: &Vec<i32>) -> bool {
