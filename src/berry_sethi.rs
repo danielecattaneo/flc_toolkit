@@ -22,7 +22,7 @@ impl DotFormat for BSStateLabel {
         if self.is_final {
             ll.push("⊣".to_string());
         }
-        ll.join(",")
+        format!("<{}>", ll.join(","))
     }
 }
 
