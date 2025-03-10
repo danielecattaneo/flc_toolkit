@@ -169,7 +169,6 @@ fn main() -> ExitCode {
         } else if cmd == "bmc" {
             cmd_bmc(&args_left[1..])
         } else if cmd == "help" || cmd == "-h" || cmd == "--help" {
-            eprintln!("help requested");
             help();
             return ExitCode::SUCCESS;
         } else {
@@ -179,7 +178,6 @@ fn main() -> ExitCode {
         if let Some(new_args_left) = new_args_left {
             args_left = new_args_left;
         } else {
-            eprintln!("error");
             help();
             return ExitCode::FAILURE;
         }
