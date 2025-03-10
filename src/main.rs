@@ -40,6 +40,20 @@ fn help() {
     eprintln!("    standard error stream.");
 }
 
+fn parse_list_arg(arg: &str) -> Option<Vec<i32>> {
+    let parts = arg.split(',');
+    let mut res: Vec<i32> = vec![];
+    for part in parts {
+        if let Ok(v) = part.trim().parse::<i32>() {
+            res.push(v);
+        } else {
+            eprintln!("error: cannot parse list \"{}\" in arguments", arg);
+            return None;
+        }
+    }
+    Some(res)
+}
+
 fn cmd_echo_mnet(args: &[String]) -> Option<&[String]> {
     if args.len() < 1 {
         eprintln!("error: missing argument to \"echo_mnet\" command");
@@ -127,9 +141,34 @@ fn cmd_bmc(args: &[String]) -> Option<&[String]> {
         return None;
     }
     let file = &args[0];
+    let args_left = &args[1..];
     let lex = Lexer::from_path(Path::new(file));
     let mut pars = Parser::new(lex);
-    if let Some(fsm) = pars.parse_machine() {
+    let fsm = pars.parse_machine()?;
+
+    if args_left.len() >= 1 && (args_left[0] == "--order" || args_left[0] == "-o") {
+        if args_left.len() < 2 {
+            eprintln!("error: missing argument to \"--order\"");
+            return None;
+        }
+        let list = parse_list_arg(args_left[1].as_str())?;
+        let mut bmc_fsm = BMCMachine::from_machine(fsm);
+        println!("digraph {{\n  rankdir=\"LR\";");
+        bmc_fsm.merge_parallel_transitions();
+        println!("{}", bmc_fsm.to_dot_2(false, false));
+        for sid in list {
+            let Some(_) = bmc_fsm.try_lookup_state(sid) else {
+                eprintln!("error: state {} does not exist", sid);
+                return None;
+            };
+            eprintln!("Eliminating state {}", sid);
+            bmc_fsm.eliminate(sid);
+            bmc_fsm.merge_parallel_transitions();
+            println!("{}", bmc_fsm.to_dot_2(false, false));
+        }
+        println!("}}");
+        Some(&args_left[2..])
+    } else {
         let mut bmc_fsm = BMCMachine::from_machine(fsm);
         println!("digraph {{\n  rankdir=\"LR\";");
         bmc_fsm.merge_parallel_transitions();
@@ -141,8 +180,8 @@ fn cmd_bmc(args: &[String]) -> Option<&[String]> {
             println!("{}", bmc_fsm.to_dot_2(false, false));
         }
         println!("}}");
+        Some(&args_left)
     }
-    return Some(&args[1..]);
 }
 
 fn main() -> ExitCode {
