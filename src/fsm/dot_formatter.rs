@@ -4,7 +4,11 @@ use crate::fsm::*;
 
 impl DotFormat for char {
     fn to_dot(&self, _: bool) -> String {
-        format!("\"{}\"", self)
+        if *self == '_' {
+            format!("ε")
+        } else {
+            format!("\"{}\"", self)
+        }
     }
 }
 
