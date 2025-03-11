@@ -56,6 +56,10 @@ fn help() {
     eprintln!("    Reprints <regex> to the standard output stream with a minimal set of");
     eprintln!("    parenthesis.");
     eprintln!();
+    eprintln!("  echo_fsm <file>");
+    eprintln!("    Prints the FSM in <file> to the standard output stream in graphviz dot");
+    eprintln!("    format.");
+    eprintln!();
     eprintln!("  berry_sethi <regex>");
     eprintln!("    Converts the given <regex> to a finite state machine using the Berry-Sethi");
     eprintln!("    algorithm, and then prints it to the standard output stream in graphviz dot");
@@ -136,6 +140,22 @@ fn cmd_echo_regex(args: &[String]) -> Result<&[String], CmdError> {
     let mut pars = RegexParser::new(re_str);
     if let Some(re) = pars.parse_regex() {
         println!("{}", re);
+        Ok(&args[1..])
+    } else {
+        Err(CmdError::ExecError)
+    }
+}
+
+fn cmd_echo_fsm(args: &[String]) -> Result<&[String], CmdError> {
+    if args.len() < 1 {
+        eprintln!("error: missing argument to \"echo_fsm\" command");
+        return Err(CmdError::BadArgs);
+    }
+    let file = &args[0];
+    let lex = Lexer::from_path(Path::new(file));
+    let mut pars = Parser::new(lex);
+    if let Some(fsm) = validated(pars.parse_machine_file()) {
+        println!("{}", fsm.to_dot(false));
         Ok(&args[1..])
     } else {
         Err(CmdError::ExecError)
@@ -250,6 +270,8 @@ fn main() -> ExitCode {
             cmd_echo_mnet(&args_left[1..])
         } else if cmd == "echo_regex" {
             cmd_echo_regex(&args_left[1..])
+        } else if cmd == "echo_fsm" {
+            cmd_echo_fsm(&args_left[1..])
         } else if cmd == "berry_sethi" {
             cmd_berry_sethi(&args_left[1..])
         } else if cmd == "berry_sethi_fsm" {
