@@ -21,13 +21,21 @@ pub use crate::parser::*;
 pub use crate::reg_lang::*;
 pub use crate::regex::parser::*;
 
+enum CmdError {
+    BadArgs,
+    ExecError
+}
+
+fn banner() {
+    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+    eprintln!("FLC Toolkit {VERSION}");
+}
+
 fn help() {
     let args: Vec<_> = std::env::args().collect();
-    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
     let path = &args[0];
     //         12345678901234567890123456789012345678901234567890123456789012345678901234567890
     //                  11111111112222222222333333333344444444445555555555666666666677777777778
-    eprintln!("FLC Toolkit {VERSION}");
     eprintln!("Usage: {} [cmd arg1 arg2 ...] [cmd arg1 arg2 ...] ...", path);
     eprintln!();
     eprintln!("Commands:");
@@ -85,53 +93,59 @@ fn parse_list_arg(arg: &str) -> Option<Vec<i32>> {
     Some(res)
 }
 
-fn cmd_echo_mnet(args: &[String]) -> Option<&[String]> {
+fn cmd_echo_mnet(args: &[String]) -> Result<&[String], CmdError> {
     if args.len() < 1 {
         eprintln!("error: missing argument to \"echo_mnet\" command");
-        return None;
+        return Err(CmdError::BadArgs);
     }
     let file = &args[0];
     let lex = Lexer::from_path(Path::new(file));
     let mut pars = Parser::new(lex);
-    if let Some(net) = validated(pars.parse_mnet()) {
+    if let Some(net) = validated(pars.parse_mnet_file()) {
         println!("{}", net.to_dot());
+        Ok(&args[1..])
+    } else {
+        Err(CmdError::ExecError)
     }
-    return Some(&args[1..]);
 }
 
-fn cmd_pilot(args: &[String]) -> Option<&[String]> {
+fn cmd_pilot(args: &[String]) -> Result<&[String], CmdError> {
     if args.len() < 1 {
         eprintln!("error: missing argument to \"pilot\" command");
-        return None;
+        return Err(CmdError::BadArgs);
     }
     let file = &args[0];
     let lex = Lexer::from_path(Path::new(file));
     let mut pars = Parser::new(lex);
-    if let Some(net) = validated(pars.parse_mnet()) {
+    if let Some(net) = validated(pars.parse_mnet_file()) {
         let pilot = create_pilot(&net);
         println!("{}", pilot.to_dot());
         pilot.print_conflicts();
+        Ok(&args[1..])
+    } else {
+        Err(CmdError::ExecError)
     }
-    return Some(&args[1..]);
 }
 
-fn cmd_echo_regex(args: &[String]) -> Option<&[String]> {
+fn cmd_echo_regex(args: &[String]) -> Result<&[String], CmdError> {
     if args.len() < 1 {
         eprintln!("error: missing argument to \"echo_regex\" command");
-        return None;
+        return Err(CmdError::BadArgs);
     }
     let re_str = &args[0];
     let mut pars = RegexParser::new(re_str);
     if let Some(re) = pars.parse_regex() {
         println!("{}", re);
+        Ok(&args[1..])
+    } else {
+        Err(CmdError::ExecError)
     }
-    return Some(&args[1..]);
 }
 
-fn cmd_berry_sethi(args: &[String]) -> Option<&[String]> {
+fn cmd_berry_sethi(args: &[String]) -> Result<&[String], CmdError> {
     if args.len() < 1 {
         eprintln!("error: missing argument to \"berry_sethi\" command");
-        return None;
+        return Err(CmdError::BadArgs);
     }
     let re_str = &args[0];
     let mut pars = RegexParser::new(re_str);
@@ -139,46 +153,54 @@ fn cmd_berry_sethi(args: &[String]) -> Option<&[String]> {
         eprintln!("{}", re.to_string_numbered());
         re.dump_local_sets();
         println!("{}", berry_sethi(&re).to_dot(false));
+        Ok(&args[1..])
+    } else {
+        Err(CmdError::ExecError)
     }
-    return Some(&args[1..]);
 }
 
-fn cmd_berry_sethi_fsm(args: &[String]) -> Option<&[String]> {
+fn cmd_berry_sethi_fsm(args: &[String]) -> Result<&[String], CmdError> {
     if args.len() < 1 {
         eprintln!("error: missing argument to \"berry_sethi_fsm\" command");
-        return None;
+        return Err(CmdError::BadArgs);
     }
     let file = &args[0];
     let lex = Lexer::from_path(Path::new(file));
     let mut pars = Parser::new(lex);
-    if let Some(fsm) = validated(pars.parse_machine()) {
+    if let Some(fsm) = validated(pars.parse_machine_file()) {
         let num_fsm = NumMachine::from_machine(fsm);
         num_fsm.dump_local_sets();
         println!("digraph {{\n  rankdir=\"LR\";");
         println!("{}", num_fsm.to_dot_2(false, false));
         println!("{}", berry_sethi(&num_fsm).to_dot_2(false, false));
         println!("}}");
+        Ok(&args[1..])
+    } else {
+        Err(CmdError::ExecError)
     }
-    return Some(&args[1..]);
 }
 
-fn cmd_bmc(args: &[String]) -> Option<&[String]> {
+fn cmd_bmc(args: &[String]) -> Result<&[String], CmdError> {
     if args.len() < 1 {
         eprintln!("error: missing argument to \"bmc\" command");
-        return None;
+        return Err(CmdError::BadArgs);
     }
     let file = &args[0];
     let args_left = &args[1..];
     let lex = Lexer::from_path(Path::new(file));
     let mut pars = Parser::new(lex);
-    let fsm = validated(pars.parse_machine())?;
+    let Some(fsm) = validated(pars.parse_machine_file()) else {
+        return Err(CmdError::ExecError);
+    };
 
     if args_left.len() >= 1 && (args_left[0] == "--order" || args_left[0] == "-o") {
         if args_left.len() < 2 {
             eprintln!("error: missing argument to \"--order\"");
-            return None;
+            return Err(CmdError::BadArgs);
         }
-        let list = parse_list_arg(args_left[1].as_str())?;
+        let Some(list) = parse_list_arg(args_left[1].as_str()) else {
+            return Err(CmdError::BadArgs);
+        };
         let mut bmc_fsm = BMCMachine::from_machine(fsm);
         println!("digraph {{\n  rankdir=\"LR\";");
         bmc_fsm.merge_parallel_transitions();
@@ -186,7 +208,7 @@ fn cmd_bmc(args: &[String]) -> Option<&[String]> {
         for sid in list {
             let Some(_) = bmc_fsm.try_lookup_state(sid) else {
                 eprintln!("error: state {} does not exist", sid);
-                return None;
+                return Err(CmdError::BadArgs);
             };
             eprintln!("Eliminating state {}", sid);
             bmc_fsm.eliminate(sid);
@@ -194,7 +216,7 @@ fn cmd_bmc(args: &[String]) -> Option<&[String]> {
             println!("{}", bmc_fsm.to_dot_2(false, false));
         }
         println!("}}");
-        Some(&args_left[2..])
+        Ok(&args_left[2..])
     } else {
         let mut bmc_fsm = BMCMachine::from_machine(fsm);
         println!("digraph {{\n  rankdir=\"LR\";");
@@ -207,7 +229,7 @@ fn cmd_bmc(args: &[String]) -> Option<&[String]> {
             println!("{}", bmc_fsm.to_dot_2(false, false));
         }
         println!("}}");
-        Some(&args_left)
+        Ok(&args_left)
     }
 }
 
@@ -222,7 +244,7 @@ fn main() -> ExitCode {
     let mut args_left = &args[1..];
     while !args_left.is_empty() {
         let cmd = &args_left[0];
-        let new_args_left = if cmd == "pilot" {
+        let cmd_res = if cmd == "pilot" {
             cmd_pilot(&args_left[1..])
         } else if cmd == "echo_mnet" {
             cmd_echo_mnet(&args_left[1..])
@@ -235,17 +257,20 @@ fn main() -> ExitCode {
         } else if cmd == "bmc" {
             cmd_bmc(&args_left[1..])
         } else if cmd == "help" || cmd == "-h" || cmd == "--help" {
+            banner();
             help();
             return ExitCode::SUCCESS;
         } else {
             eprintln!("error: invalid command \"{cmd}\"");
-            None
+            Err(CmdError::BadArgs)
         };
-        if let Some(new_args_left) = new_args_left {
-            args_left = new_args_left;
-        } else {
-            help();
-            return ExitCode::FAILURE;
+        match cmd_res {
+            Ok(new_args_left) => args_left = new_args_left,
+            Err(CmdError::BadArgs) => {
+                help();
+                return ExitCode::FAILURE;
+            }
+            Err(_) => return ExitCode::FAILURE
         }
     }
 

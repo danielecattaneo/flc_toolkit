@@ -26,6 +26,7 @@ pub enum TokenValue {
     KwState,
     KwInitial,
     KwFinal,
+    EndOfFile
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -143,6 +144,14 @@ impl Lexer {
         Some(self.advance(i))
     }
 
+    fn accept_eof(&mut self) -> Option<Fragment> {
+        if self.read_idx == self.input.len() {
+            Some(Fragment{ loc: self.read_loc, val: "" })
+        } else {
+            None
+        }
+    }
+
     fn skip_whitespace(&mut self) {
         loop {
             self.accept_while(|_, c| c.is_ascii_whitespace());
@@ -160,7 +169,9 @@ impl Iterator for Lexer {
 
     fn next(&mut self) -> Option<Token> {
         self.skip_whitespace();
-        if let Some(frag) = self.accept_pattern(";") {
+        if let Some(frag) = self.accept_eof() {
+            return Some(Token::from_frag(&frag, TokenValue::EndOfFile));
+        } else if let Some(frag) = self.accept_pattern(";") {
             return Some(Token::from_frag(&frag, TokenValue::Semi));
         } else if let Some(frag) = self.accept_pattern("{") {
             return Some(Token::from_frag(&frag, TokenValue::LBrace));

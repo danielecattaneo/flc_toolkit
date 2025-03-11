@@ -90,7 +90,7 @@ impl Parser {
         Some(state)
     }
 
-    pub fn parse_machine(&mut self) -> Option<Machine> {
+    fn parse_machine(&mut self) -> Option<Machine> {
         expect!(self, TokenValue::KwMachine, "expected a machine");
         let name = expect!(self, TokenValue::Ident(name), "expected a machine name", {
             if !name.is_ascii_uppercase() {
@@ -114,7 +114,16 @@ impl Parser {
         Some(machine)
     }
 
-    pub fn parse_mnet(&mut self) -> Option<MachineNet> {
+    pub fn parse_machine_file(&mut self) -> Option<Machine> {
+        if let Some(m) = self.parse_machine() {
+            expect!(self, TokenValue::EndOfFile, "expected end of file");
+            Some(m)
+        } else {
+            None
+        }
+    }
+
+    fn parse_mnet(&mut self) -> Option<MachineNet> {
         let mut machines: Vec<Machine> = Vec::new();
         expect!(self, TokenValue::KwMNet, "expected a machine net");
         expect!(self, TokenValue::LBrace, "expected a machine net body enclosed by {}");
@@ -127,5 +136,14 @@ impl Parser {
         }
         expect!(self, TokenValue::RBrace, "unmatched }");
         Some(MachineNet{machines})
+    }
+
+    pub fn parse_mnet_file(&mut self) -> Option<MachineNet> {
+        if let Some(m) = self.parse_mnet() {
+            expect!(self, TokenValue::EndOfFile, "expected end of file");
+            Some(m)
+        } else {
+            None
+        }
     }
 }
