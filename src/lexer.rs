@@ -1,7 +1,6 @@
 use std::{fs::File, path::Path};
 use std::io::prelude::*;
 
-
 pub struct Lexer {
     input: String,
     read_idx: usize,

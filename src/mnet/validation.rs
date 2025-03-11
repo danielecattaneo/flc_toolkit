@@ -1,4 +1,5 @@
 use crate::mnet::*;
+use crate::validation::*;
 
 impl MachineNet {
     fn validate_machine_count(&self) -> bool {
@@ -38,14 +39,7 @@ impl MachineNet {
 
     fn validate_state_count(&self) -> bool {
         // All machines must have > 0 states
-        let mut res = true;
-        for m in &self.machines {
-            if m.states.len() == 0 {
-                eprintln!("error: machine {} has zero states", m.label);
-                res = false;
-            }
-        }
-        res
+        self.machines.iter().all(|m| m.validate_state_count())
     }
 
     fn validate_single_initial_state(&self) -> bool {
@@ -66,25 +60,14 @@ impl MachineNet {
     }
 
     fn validate_any_final_state(&self) -> bool {
-        let mut res = true;
-        for m in &self.machines {
-            if !m.states.iter().any(|s| s.is_final) {
-                eprintln!("error: no final state in machine {}", m.label);
-                res = false;
-            }
-        }
-        res
+        self.machines.iter().all(|m| m.validate_any_final_state())
     }
 
     fn validate_transitions(&self) -> bool {
-        let mut res = true;
+        let mut res = self.machines.iter().all(|m| m.validate_transitions());
         for m in &self.machines {
             for s in &m.states {
                 for (i, t) in s.transitions.iter().enumerate() {
-                    if let None = m.try_lookup_state(t.dest_id) {
-                        eprintln!("error: transition {}{} -{}-> {}{} goes to a non-existent state", s.id, m.label, t.label, t.dest_id, m.label);
-                        res = false;
-                    }
                     if t.is_nonterminal() {
                         if let None = self.try_lookup_machine(t.label) {
                             eprintln!("error: transition {}{} -{}-> ... has an invalid nonterminal label", s.id, m.label, t.label);
@@ -102,8 +85,10 @@ impl MachineNet {
         }
         res
     }
+}
 
-    pub fn validate(&self) -> bool {
+impl Validation for MachineNet {
+    fn validate(&self) -> bool {
         [
             self.validate_machine_count(),
             self.validate_start(),

@@ -7,10 +7,12 @@ mod mnet;
 mod elr_pilot;
 mod berry_sethi;
 mod bmc;
+mod validation;
 
 use std::path::Path;
 use std::process::ExitCode;
 
+pub use crate::validation::*;
 pub use crate::elr_pilot::*;
 pub use crate::berry_sethi::*;
 pub use crate::bmc::*;
@@ -91,10 +93,8 @@ fn cmd_echo_mnet(args: &[String]) -> Option<&[String]> {
     let file = &args[0];
     let lex = Lexer::from_path(Path::new(file));
     let mut pars = Parser::new(lex);
-    if let Some(net) = pars.parse_mnet() {
-        if net.validate() {
-            println!("{}", net.to_dot());
-        }
+    if let Some(net) = validated(pars.parse_mnet()) {
+        println!("{}", net.to_dot());
     }
     return Some(&args[1..]);
 }
@@ -107,12 +107,10 @@ fn cmd_pilot(args: &[String]) -> Option<&[String]> {
     let file = &args[0];
     let lex = Lexer::from_path(Path::new(file));
     let mut pars = Parser::new(lex);
-    if let Some(net) = pars.parse_mnet() {
-        if net.validate() {
-            let pilot = create_pilot(&net);
-            println!("{}", pilot.to_dot());
-            pilot.print_conflicts();
-        }
+    if let Some(net) = validated(pars.parse_mnet()) {
+        let pilot = create_pilot(&net);
+        println!("{}", pilot.to_dot());
+        pilot.print_conflicts();
     }
     return Some(&args[1..]);
 }
@@ -153,7 +151,7 @@ fn cmd_berry_sethi_fsm(args: &[String]) -> Option<&[String]> {
     let file = &args[0];
     let lex = Lexer::from_path(Path::new(file));
     let mut pars = Parser::new(lex);
-    if let Some(fsm) = pars.parse_machine() {
+    if let Some(fsm) = validated(pars.parse_machine()) {
         let num_fsm = NumMachine::from_machine(fsm);
         num_fsm.dump_local_sets();
         println!("digraph {{\n  rankdir=\"LR\";");
@@ -173,7 +171,7 @@ fn cmd_bmc(args: &[String]) -> Option<&[String]> {
     let args_left = &args[1..];
     let lex = Lexer::from_path(Path::new(file));
     let mut pars = Parser::new(lex);
-    let fsm = pars.parse_machine()?;
+    let fsm = validated(pars.parse_machine())?;
 
     if args_left.len() >= 1 && (args_left[0] == "--order" || args_left[0] == "-o") {
         if args_left.len() < 2 {

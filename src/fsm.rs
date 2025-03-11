@@ -1,4 +1,5 @@
 mod dot_formatter;
+mod validation;
 
 use std::collections::VecDeque;
 use std::collections::HashSet;
