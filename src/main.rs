@@ -29,15 +29,44 @@ fn help() {
     eprintln!("Usage: {} [cmd arg1 arg2 ...] [cmd arg1 arg2 ...] ...", path);
     eprintln!();
     eprintln!("Commands:");
-    eprintln!("  help");
+    eprintln!();
+    eprintln!("  help, -h, --help");
     eprintln!("    Prints this information.");
+    eprintln!();
     eprintln!("  echo_mnet <file>");
     eprintln!("    Prints the machine net in <file> to the standard output stream in graphviz");
     eprintln!("    dot format.");
+    eprintln!();
     eprintln!("  pilot <file>");
     eprintln!("    Computes the ELR(1) pilot of the machine net in <file>, prints it to the");
     eprintln!("    standard output stream in graphviz dot format, and prints any conflict to");
     eprintln!("    standard error stream.");
+    eprintln!();
+    eprintln!("  echo_regex <regex>");
+    eprintln!("    Reprints <regex> to the standard output stream with a minimal set of");
+    eprintln!("    parenthesis.");
+    eprintln!();
+    eprintln!("  berry_sethi <regex>");
+    eprintln!("    Converts the given <regex> to a finite state machine using the Berry-Sethi");
+    eprintln!("    algorithm, and then prints it to the standard output stream in graphviz dot");
+    eprintln!("    format. The sets of initials and followers are also printed to the standard");
+    eprintln!("    error stream.");
+    eprintln!();
+    eprintln!("  berry_sethi_fsm <file>");
+    eprintln!("    Determinizes the FSM in <file> using the Berry-Sethi algorithm, and then");
+    eprintln!("    prints it to the standard output stream in graphviz dot format. The sets of");
+    eprintln!("    initials and followers are also printed to the standard error stream.");
+    eprintln!();
+    eprintln!("  bmc <file> [-o|--order <list>]");
+    eprintln!("    Converts the FSM in <file> to a regular expression using the Brzozowski-");
+    eprintln!("    McCluskey (node elimination) method. The reduction steps are logged to the");
+    eprintln!("    standard error stream, and the intermediate and final steps of the reduction");
+    eprintln!("    are printed in graphviz dot format to the standard output.");
+    eprintln!("    Options:");
+    eprintln!("      -o|--order <list>   Specifies the order of reduction of the states as a");
+    eprintln!("                          comma-separated list. For example '3,2,1' forces the");
+    eprintln!("                          elimination of state 3 first, followed by states 2 and");
+    eprintln!("                          1 in that order. Any other state left is not eliminated.");
 }
 
 fn parse_list_arg(arg: &str) -> Option<Vec<i32>> {
