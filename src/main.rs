@@ -4,22 +4,23 @@ mod regex;
 mod parser;
 mod fsm;
 mod mnet;
+mod validation;
 mod elr_pilot;
 mod berry_sethi;
 mod bmc;
-mod validation;
+mod epsilon_elim;
 
 use std::path::Path;
 use std::process::ExitCode;
 
-pub use crate::validation::*;
-pub use crate::elr_pilot::*;
-pub use crate::berry_sethi::*;
-pub use crate::bmc::*;
 pub use crate::lexer::*;
 pub use crate::parser::*;
 pub use crate::reg_lang::*;
 pub use crate::regex::parser::*;
+pub use crate::validation::*;
+pub use crate::elr_pilot::*;
+pub use crate::berry_sethi::*;
+pub use crate::bmc::*;
 
 enum CmdError {
     BadArgs,
@@ -81,6 +82,14 @@ fn help() {
     eprintln!("                          comma-separated list. For example '3,2,1' forces the");
     eprintln!("                          elimination of state 3 first, followed by states 2 and");
     eprintln!("                          1. Any other state left is not eliminated.");
+    eprintln!();
+    eprintln!("  backprop <file>");
+    eprintln!("  forwardprop <file>");
+    eprintln!("    Eliminates spontaneous moves (epsilon-transitions) from the FSM in <file>,");
+    eprintln!("    either by backward propagation (backprop) or by forward propagation");
+    eprintln!("    (forwardprop). The result is printed to the standard output in graphviz dot");
+    eprintln!("    format.");
+    eprintln!();
 }
 
 fn parse_list_arg(arg: &str) -> Option<Vec<i32>> {
@@ -253,6 +262,44 @@ fn cmd_bmc(args: &[String]) -> Result<&[String], CmdError> {
     }
 }
 
+fn cmd_backprop(args: &[String]) -> Result<&[String], CmdError> {
+    if args.len() < 1 {
+        eprintln!("error: missing argument to \"backprop\" command");
+        return Err(CmdError::BadArgs);
+    }
+    let file = &args[0];
+    let lex = Lexer::from_path(Path::new(file));
+    let mut pars = Parser::new(lex);
+    if let Some(mut fsm) = validated(pars.parse_machine_file()) {
+        fsm.epsilon_trans_closure();
+        fsm.backward_propagation();
+        fsm.remove_epsilon_trans();
+        println!("{}", fsm.to_dot(false));
+        Ok(&args[1..])
+    } else {
+        Err(CmdError::ExecError)
+    }
+}
+
+fn cmd_forwardprop(args: &[String]) -> Result<&[String], CmdError> {
+    if args.len() < 1 {
+        eprintln!("error: missing argument to \"forwardprop\" command");
+        return Err(CmdError::BadArgs);
+    }
+    let file = &args[0];
+    let lex = Lexer::from_path(Path::new(file));
+    let mut pars = Parser::new(lex);
+    if let Some(mut fsm) = validated(pars.parse_machine_file()) {
+        fsm.epsilon_trans_closure();
+        fsm.forward_propagation();
+        fsm.remove_epsilon_trans();
+        println!("{}", fsm.to_dot(false));
+        Ok(&args[1..])
+    } else {
+        Err(CmdError::ExecError)
+    }
+}
+
 fn main() -> ExitCode {
     let args: Vec<_> = std::env::args().collect();
     if args.len() == 1 {
@@ -278,6 +325,10 @@ fn main() -> ExitCode {
             cmd_berry_sethi_fsm(&args_left[1..])
         } else if cmd == "bmc" {
             cmd_bmc(&args_left[1..])
+        } else if cmd == "backprop" {
+            cmd_backprop(&args_left[1..])
+        } else if cmd == "forwardprop" {
+            cmd_forwardprop(&args_left[1..])
         } else if cmd == "help" || cmd == "-h" || cmd == "--help" {
             banner();
             help();
