@@ -76,7 +76,7 @@ fn help() {
     eprintln!("      -o|--order <list>   Specifies the order of reduction of the states as a");
     eprintln!("                          comma-separated list. For example '3,2,1' forces the");
     eprintln!("                          elimination of state 3 first, followed by states 2 and");
-    eprintln!("                          1 in that order. Any other state left is not eliminated.");
+    eprintln!("                          1. Any other state left is not eliminated.");
 }
 
 fn parse_list_arg(arg: &str) -> Option<Vec<i32>> {
