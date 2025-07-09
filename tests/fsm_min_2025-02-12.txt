@@ -1,0 +1,11 @@
+machine A {
+    state 0 { initial; a->1; b->2; }
+    state 1 { b->3; }
+    state 2 { a->4; }
+    state 3 { final; b->3; a->5; }
+    state 4 { b->2; a->6; }
+    state 5 { b->7; }
+    state 6 { b->8; }
+    state 7 { a->5; final; }
+    state 8 { a->6; final; }
+}

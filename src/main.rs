@@ -9,11 +9,13 @@ mod elr_pilot;
 mod berry_sethi;
 mod bmc;
 mod epsilon_elim;
+mod nerode;
 
 use std::path::Path;
 use std::process::ExitCode;
 
 pub use crate::lexer::*;
+use crate::nerode::MinimizedMachine;
 pub use crate::parser::*;
 pub use crate::reg_lang::*;
 pub use crate::regex::parser::*;
@@ -82,6 +84,10 @@ fn help() {
     eprintln!("                          comma-separated list. For example '3,2,1' forces the");
     eprintln!("                          elimination of state 3 first, followed by states 2 and");
     eprintln!("                          1. Any other state left is not eliminated.");
+    eprintln!();
+    eprintln!("  minimize <file>");
+    eprintln!("    Minimizes the FSM in <file> using the Nerode-McCluskey algorithm, and then");
+    eprintln!("    prints it to the standard output stream in graphviz dot format.");
     eprintln!();
     eprintln!("  backprop <file>");
     eprintln!("  forwardprop <file>");
@@ -300,6 +306,26 @@ fn cmd_forwardprop(args: &[String]) -> Result<&[String], CmdError> {
     }
 }
 
+fn cmd_minimize(args: &[String]) -> Result<&[String], CmdError> {
+    if args.len() < 1 {
+        eprintln!("error: missing argument to \"minimize\" command");
+        return Err(CmdError::BadArgs);
+    }
+    let file = &args[0];
+    let lex = Lexer::from_path(Path::new(file));
+    let mut pars = Parser::new(lex);
+    if let Some(fsm) = validated(pars.parse_machine_file()) {
+        let mut dist = fsm.dist_table_len_0();
+        while fsm.dist_table_update(&mut dist) > 0 { }
+        let sets = fsm.cliques(&dist);
+        let m = MinimizedMachine::from_machine_and_equiv_sets(&fsm, &sets);
+        println!("{}", m.to_dot(false));
+        Ok(&args[1..])
+    } else {
+        Err(CmdError::ExecError)
+    }
+}
+
 fn main() -> ExitCode {
     let args: Vec<_> = std::env::args().collect();
     if args.len() == 1 {
@@ -329,6 +355,8 @@ fn main() -> ExitCode {
             cmd_backprop(&args_left[1..])
         } else if cmd == "forwardprop" {
             cmd_forwardprop(&args_left[1..])
+        } else if cmd == "minimize" {
+            cmd_minimize(&args_left[1..])
         } else if cmd == "help" || cmd == "-h" || cmd == "--help" {
             banner();
             help();
