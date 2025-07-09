@@ -40,9 +40,9 @@ impl DistTableComparison for DistTable {
 
     fn find_state_pair(&self, s: i32, t: i32) -> bool {
         if s < t {
-            self.iter().find(|e| **e == DistinguishablePair{state_1: s, state_2: t}).is_some() 
+            self.iter().any(|e| *e == DistinguishablePair{state_1: s, state_2: t})
         } else {
-            self.iter().find(|e| **e == DistinguishablePair{state_1: t, state_2: s}).is_some() 
+            self.iter().any(|e| *e == DistinguishablePair{state_1: t, state_2: s})
         }
     }
 }
@@ -142,13 +142,13 @@ impl DotFormat for MinimizedStateLabel {
 }
 
 impl MinimizedMachine {
-    pub fn from_machine_and_equiv_sets(m: &Machine, sets: &Vec<HashSet<i32>>) -> MinimizedMachine {
+    pub fn from_machine_and_equiv_sets(m: &Machine, sets: &[HashSet<i32>]) -> MinimizedMachine {
         let sorted_sets: Vec<_> = sets.iter().sorted_by_key(|s| s.iter().min()).collect();
         let old_to_new: HashMap<i32, i32> = sorted_sets.iter().enumerate().flat_map(|(i, s)| {
             s.iter().map(|j| (*j, i as i32)).collect::<Vec<_>>()
         }).collect();
         let new_states: Vec<_> = sorted_sets.iter().enumerate().map(|(id, set)| {
-            let is_initial = set.iter().fold(false, |acc, sid| acc || m.lookup_state(*sid).is_initial);
+            let is_initial = set.iter().any(|sid| m.lookup_state(*sid).is_initial);
             let random_state = m.lookup_state(*set.iter().next().unwrap()); // any will do
             let is_final = random_state.is_final;
             let transitions: Vec<_> = random_state.transitions.iter().map(|ts| {
