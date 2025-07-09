@@ -115,7 +115,7 @@ impl BMCMachine {
         assert!(t_loop.len() < 2);
         let mut all_new_ts: Vec<(i32, Vec<BMCTransition>)> = Vec::new();
         for (src_id, t1) in t_in {
-            let lhs = if let Some(tl) = t_loop.get(0) {
+            let lhs = if let Some(tl) = t_loop.first() {
                 let st = Regex::Star(Box::new(tl.label.clone()));
                 Regex::Concat(Box::new(t1.label.clone()), Box::new(st))
             } else {

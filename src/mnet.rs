@@ -47,7 +47,7 @@ impl MachineNet {
                 res.extend(rec_fol);
             }
         }
-        return res;
+        res
     }
 
     pub fn followers(&self, machine: char, id: i32, next: HashSet<char>) -> HashSet<char> {

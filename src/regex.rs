@@ -21,7 +21,7 @@ impl NumLocalSets for Regex {
             Regex::Null => true,
             Regex::Literal(_) => false,
             Regex::Union(r1, r2) => r1.nullable() || r2.nullable(),
-            Regex::Concat(r1,r2) => r1.nullable() && r2.nullable(),
+            Regex::Concat(r1, r2) => r1.nullable() && r2.nullable(),
             Regex::Plus(r1) => r1.nullable(),
             Regex::Star(_) => true
         }
@@ -50,7 +50,7 @@ impl NumLocalSets for Regex {
                 let mut set = r1.numbered_initials();
                 set.extend(r2.numbered_initials());
                 set
-            },
+            }
             Regex::Concat(r1, r2) => {
                 let mut set = r1.numbered_initials();
                 if r1.nullable() {

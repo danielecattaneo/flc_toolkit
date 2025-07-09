@@ -3,7 +3,7 @@ use crate::validation::*;
 
 impl MachineNet {
     fn validate_machine_count(&self) -> bool {
-        if self.machines.len() == 0 {
+        if self.machines.is_empty() {
             eprintln!("error: no machines in the machine net");
             false
         } else {
@@ -13,7 +13,7 @@ impl MachineNet {
 
     fn validate_start(&self) -> bool {
         // There must be a S-named machine
-        if let None = self.machines.iter().find(|m| m.label == 'S') {
+        if !self.machines.iter().any(|m| m.label == 'S') {
             eprintln!("error: axiom (machine named S) missing");
             false
         } else {
@@ -68,11 +68,9 @@ impl MachineNet {
         for m in &self.machines {
             for s in &m.states {
                 for (i, t) in s.transitions.iter().enumerate() {
-                    if t.is_nonterminal() {
-                        if let None = self.try_lookup_machine(t.label) {
-                            eprintln!("error: transition {}{} -{}-> ... has an invalid nonterminal label", s.id, m.label, t.label);
-                            res = false;
-                        }
+                    if t.is_nonterminal() && self.try_lookup_machine(t.label).is_none() {
+                        eprintln!("error: transition {}{} -{}-> ... has an invalid nonterminal label", s.id, m.label, t.label);
+                        res = false;
                     }
                     for tj in &s.transitions[i+1..] {
                         if t.label == tj.label {

@@ -61,7 +61,7 @@ impl BSMachine {
         let id = self.states.len() as i32;
         new.id = id;
         self.states.push(new);
-        return id;
+        id
     }
 }
 

@@ -49,10 +49,10 @@ impl RegexFormatter {
                 RegexFmtCharClass::Ini => true,
                 RegexFmtCharClass::Literal(_, _) => true,
                 RegexFmtCharClass::OpenGroup(_) => {
-                    if let RegexFmtCharClass::OpenGroup(_) = self.prev { false } else { true }
+                    !matches!(self.prev, RegexFmtCharClass::OpenGroup(_))
                 }
                 RegexFmtCharClass::ClosedGroup(_) => {
-                    if let RegexFmtCharClass::ClosedGroup(_) = self.prev { false } else { true }
+                    !matches!(self.prev, RegexFmtCharClass::ClosedGroup(_))
                 }
                 RegexFmtCharClass::UnOp(_) => false,
                 RegexFmtCharClass::BinOp(_) => true

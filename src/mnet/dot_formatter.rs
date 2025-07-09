@@ -7,6 +7,6 @@ impl MachineNet {
             m.to_dot_2(true, false)
         }).collect::<Vec<_>>().join("\n");
         let trailer = "\n}";
-        format!("{}{}{}", header, machines, trailer)
+        format!("{header}{machines}{trailer}")
     }
 }

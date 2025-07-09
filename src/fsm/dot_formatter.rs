@@ -5,9 +5,9 @@ use crate::fsm::*;
 impl DotFormat for char {
     fn to_dot(&self, _: bool) -> String {
         if *self == '_' {
-            format!("ε")
+            "ε".to_string()
         } else {
-            format!("\"{}\"", self)
+            format!("\"{self}\"")
         }
     }
 }
@@ -15,7 +15,7 @@ impl DotFormat for char {
 impl DotFormat for NumTerm {
     fn to_dot(&self, _: bool) -> String {
         if self.c == '_' {
-            format!("ε")
+            "ε".to_string()
         } else {
             format!("<{}<sub>{}</sub>>", self.c, self.i)
         }
@@ -32,20 +32,20 @@ impl DotFormat for StateLabel {
             self.id.to_string()
         };
         if detailed { 
-            format!("<{}<sub>{}</sub>>", str_id, self.m_name)
+            format!("<{str_id}<sub>{}</sub>>", self.m_name)
         } else {
-            format!("\"{}\"", str_id)
+            format!("\"{str_id}\"")
         }
     }
 }
 
 fn state_id_to_node_id<ML: DotFormat+Display>(m_name: &ML, s_id: i32) -> String {
     if s_id == -1 {
-        format!("n{}B", m_name)
+        format!("n{m_name}B")
     } else if s_id == -2 {
-        format!("n{}E", m_name)
+        format!("n{m_name}E")
     } else {
-        format!("n{}{}", m_name, s_id)
+        format!("n{m_name}{s_id}")
     }
 }
 
@@ -55,17 +55,17 @@ impl<SL: DotFormat, TL: DotFormat> BaseState<SL, TL> {
         let label = self.label.to_dot(detailed);
 
         let mut res: Vec<String> = Vec::new();
-        res.push(format!("  {} [label={}];", name, label));
+        res.push(format!("  {name} [label={label}];"));
         if self.is_initial {
-            res.push(format!("  init{} -> {};", m_name, name));
+            res.push(format!("  init{m_name} -> {name};"));
         }
         let transitions: Vec<_> = self.transitions.iter().map(|t| {
             let dest_name = state_id_to_node_id(m_name, t.dest_id);
-            format!("  {} -> {} [label={}];", name, dest_name, t.label.to_dot(detailed))
+            format!("  {name} -> {dest_name} [label={}];", t.label.to_dot(detailed))
         }).collect();
         if self.is_final {
-            res.push(format!("  sink{} [shape=plain,label=\" \"];", name));
-            res.push(format!("  {} -> sink{};", name, name));
+            res.push(format!("  sink{name} [shape=plain,label=\" \"];"));
+            res.push(format!("  {name} -> sink{name};"));
         }
         res.extend(transitions);
         res.join("\n")
@@ -84,7 +84,7 @@ impl<ML: DotFormat+Display, SL: DotFormat, TL: DotFormat> BaseMachine<ML, SL, TL
             s.to_dot(&self.label, detailed)
         }).collect::<Vec<_>>().join("\n");
         let trailer = if with_header { "\n}" } else { "" };
-        format!("{}{}{}{}", header, init, states, trailer)
+        format!("{header}{init}{states}{trailer}")
     }
 }
 

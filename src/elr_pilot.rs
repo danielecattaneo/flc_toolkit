@@ -1,6 +1,7 @@
 pub mod dot_formatter;
 pub mod conflicts;
 
+use core::fmt;
 use std::collections::VecDeque;
 use std::collections::HashSet;
 pub use crate::mnet::*;
@@ -13,16 +14,18 @@ pub struct Candidate {
     pub is_final: bool
 }
 
-impl Candidate {
-    fn to_string(&self) -> String {
+impl fmt::Display for Candidate {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let state = if self.is_final {
             format!("({}{})", self.state, self.machine)
         } else {
             format!("{}{}", self.state, self.machine)
         };
-        format!("<{}, {}>", state, self.lookahead)
+        write!(f, "<{}, {}>", state, self.lookahead)
     }
+}
 
+impl Candidate {
     fn is_base(&self) -> bool {
         self.state != 0
     }
@@ -51,7 +54,7 @@ impl PilotState {
     pub fn is_equivalent(&self, other: &PilotState) -> bool {
         let my_base = self.base_set();
         let other_base = other.base_set();
-        return my_base == other_base;
+        my_base == other_base
     }
 }
 
@@ -77,7 +80,7 @@ impl Pilot {
         new.id = id;
         closure(&mut new, net);
         self.states.push(new);
-        return id;
+        id
     }
 }
 
@@ -112,9 +115,9 @@ fn collect_transitions(state: &PilotState, net: &MachineNet) -> Vec<char> {
             res.insert(t.label);
         }
     }
-    let mut vec_res = Vec::from_iter(res.into_iter());
+    let mut vec_res = Vec::from_iter(res);
     vec_res.sort();
-    return vec_res;
+    vec_res
 }
 
 fn shift_candidate(c: &Candidate, net: &MachineNet, next: char) -> Option<Candidate> {
@@ -125,7 +128,7 @@ fn shift_candidate(c: &Candidate, net: &MachineNet, next: char) -> Option<Candid
             return Some(Candidate{machine:c.machine, state:t.dest_id, lookahead:c.lookahead, is_final:dest_state.is_final});
         }
     }
-    return None;
+    None
 }
 
 fn shift(state: &PilotState, net: &MachineNet, character: char) -> (PilotTransition, PilotState) {
@@ -166,7 +169,7 @@ pub fn create_pilot(net: &MachineNet) -> Pilot {
         let state = pilot.lookup_state(state_id);
         let future_xions = collect_transitions(state, net);
         let shifts: Vec<_> = future_xions.into_iter().map(|c| {
-            shift(&state, net, c)
+            shift(state, net, c)
         }).collect();
         let xions: Vec<_> = shifts.into_iter().map(|(mut trans, maybe_new_state)| {
             let id = pilot.insert(maybe_new_state, net);
@@ -177,5 +180,5 @@ pub fn create_pilot(net: &MachineNet) -> Pilot {
         pilot.lookup_state_mut(state_id).transitions = xions;
     }
 
-    return pilot;
+    pilot
 }

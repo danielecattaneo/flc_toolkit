@@ -54,7 +54,7 @@ pub trait NumLocalSets {
     }
 
     fn dump_local_sets(&self) {
-        let mut ini: Vec<_> = self.numbered_initials().into_iter().map(|t| format!("{}", t)).collect();
+        let mut ini: Vec<_> = self.numbered_initials().into_iter().map(|t| format!("{t}")).collect();
         ini.sort();
         if self.nullable() {
             ini.push("⊣".to_string());
@@ -64,7 +64,7 @@ pub trait NumLocalSets {
         let fin = self.numbered_finals();
 
         let mut fin_tmp: Vec<_> = self.numbered_followers().iter().map(|(t, fol)| {
-            let mut str_fol: Vec<_> = fol.into_iter().map(|t| format!("{}", t)).collect();
+            let mut str_fol: Vec<_> = fol.iter().map(|t| format!("{t}")).collect();
             str_fol.sort();
             if fin.contains(t) {
                 str_fol.push("⊣".to_string());

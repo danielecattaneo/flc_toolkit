@@ -67,7 +67,7 @@ impl Iterator for RegexLexer<'_> {
     type Item = RegexToken;
 
     fn next(&mut self) -> Option<RegexToken> {
-        while let Some((i, c)) = self.rest.next() {
+        for (i, c) in self.rest.by_ref() {
             if ! c.is_ascii_whitespace() {
                 return RegexToken::from_char(i, c);
             }
@@ -132,11 +132,11 @@ impl RegexParser<'_> {
         eprintln!("{}", self.string);
         for _ in 0..loc { eprint!("~"); }
         eprintln!("^");
-        eprintln!("error: {}", s);
+        eprintln!("error: {s}");
     }
 
     fn advance(&mut self) -> Option<RegexToken> {
-        if let Some(_) = self.lookahead {
+        if self.lookahead.is_some() {
             replace(&mut self.lookahead, self.lexer.next())
         } else {
             None
@@ -144,15 +144,15 @@ impl RegexParser<'_> {
     }
 
     fn parse_term(&mut self) -> Option<Regex> {
-        if let Some(_) = accept!(self, RegexTokenValue::LPar) {
+        if accept!(self, RegexTokenValue::LPar).is_some() {
             let res = self.parse_union()?;
             expect!(self, RegexTokenValue::RPar, "mismatched parenthesis");
             Some(res)
-        } else if let Some(_) = accept!(self, RegexTokenValue::LSquare) {
+        } else if accept!(self, RegexTokenValue::LSquare).is_some() {
             let lhs = self.parse_union()?;
             expect!(self, RegexTokenValue::RSquare, "mismatched square parenthesis");
             Some(Regex::Union(Box::new(lhs), Box::new(Regex::Null)))
-        } else if let Some(_) = accept!(self, RegexTokenValue::Epsilon) {
+        } else if accept!(self, RegexTokenValue::Epsilon).is_some() {
             Some(Regex::Null)
         } else if let token!(RegexTokenValue::Literal(c)) = self.lookahead {
             self.advance();
@@ -167,9 +167,9 @@ impl RegexParser<'_> {
     fn parse_star(&mut self) -> Option<Regex> {
         let mut lhs = self.parse_term()?;
         loop {
-            if let Some(_) = accept!(self, RegexTokenValue::Star) {
+            if accept!(self, RegexTokenValue::Star).is_some() {
                 lhs = Regex::Star(Box::new(lhs));
-            } else if let Some(_) = accept!(self, RegexTokenValue::Plus) {
+            } else if accept!(self, RegexTokenValue::Plus).is_some() {
                 lhs = Regex::Plus(Box::new(lhs));
             } else {
                 break Some(lhs);
@@ -180,7 +180,7 @@ impl RegexParser<'_> {
     fn parse_concat(&mut self) -> Option<Regex> {
         let mut lhs = self.parse_star()?;
         loop {
-            if let Some(_) = accept!(self, RegexTokenValue::Concat) {
+            if accept!(self, RegexTokenValue::Concat).is_some() {
                 let rhs = self.parse_star()?;
                 lhs = Regex::Concat(Box::new(lhs), Box::new(rhs));
             } else if let token!(RegexTokenValue::Literal(_))
@@ -198,7 +198,7 @@ impl RegexParser<'_> {
     fn parse_union(&mut self) -> Option<Regex> {
         let mut lhs = self.parse_concat()?;
         loop {
-            if let Some(_) = accept!(self, RegexTokenValue::Union) {
+            if accept!(self, RegexTokenValue::Union).is_some() {
                 let rhs = self.parse_concat()?;
                 lhs = Regex::Union(Box::new(lhs), Box::new(rhs));
             } else {
@@ -208,11 +208,11 @@ impl RegexParser<'_> {
     }
 
     pub fn parse_regex(&mut self) -> Option<Regex> {
-        if let None = self.lookahead {
+        if self.lookahead.is_none() {
             Some(Regex::Null)
         } else {
             let res = self.parse_union()?;
-            if let None = self.lookahead {
+            if self.lookahead.is_none() {
                 Some(res)
             } else {
                 self.emit_error("unrecognized trailing characters");

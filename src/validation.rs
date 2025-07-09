@@ -3,13 +3,5 @@ pub trait Validation {
 }
 
 pub fn validated<T: Validation>(v: Option<T>) -> Option<T> {
-    if let Some(v) = v {
-        if v.validate() {
-            Some(v)
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+    v.filter(|v| v.validate())
 }

@@ -127,7 +127,7 @@ impl NumMachine {
         NumMachine{ label: old_m.label, states: states.collect() }
     }
 
-    fn nullable_from(&self, active: &Vec<i32>) -> bool {
+    fn nullable_from(&self, active: &[i32]) -> bool {
         let mut cur_active: VecDeque<_> = active.iter().cloned().collect();
         let mut visited: HashSet<i32> = HashSet::new();
         while let Some(sid) = cur_active.pop_front() {
@@ -148,7 +148,7 @@ impl NumMachine {
         false
     }
 
-    fn numbered_initials_from(&self, active: &Vec<i32>) -> NumTermSet {
+    fn numbered_initials_from(&self, active: &[i32]) -> NumTermSet {
         let mut cur_active: VecDeque<_> = active.iter().cloned().collect();
         let mut visited: HashSet<i32> = HashSet::new();
         let mut res = NumTermSet::new();
@@ -169,7 +169,7 @@ impl NumMachine {
         res
     }
 
-    fn numbered_finals_to(&self, active: &Vec<i32>) -> NumTermSet {
+    fn numbered_finals_to(&self, active: &[i32]) -> NumTermSet {
         let mut cur_active: VecDeque<_> = active.iter().cloned().collect();
         let mut visited: HashSet<i32> = HashSet::new();
         let mut res = NumTermSet::new();
@@ -214,8 +214,8 @@ impl NumLocalSets for NumMachine {
 
     fn numbered_digrams(&self) -> NumDigramsSet {
         self.states.iter().flat_map(|s| {
-            let prev = self.numbered_finals_to(&vec![s.id]);
-            let next = self.numbered_initials_from(&vec![s.id]);
+            let prev = self.numbered_finals_to(&[s.id]);
+            let next = self.numbered_initials_from(&[s.id]);
             set_prod(&prev, &next)
         }).collect()
     }

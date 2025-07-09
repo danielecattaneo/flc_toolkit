@@ -12,7 +12,7 @@ impl MergedCandidate {
         let look_strs: Vec<_> = self.lookaheads.iter().map(|c| c.to_string()).collect();
         let look_str = look_strs.join(",");
         let state = format!("{}<sub>{}</sub>", self.state, self.machine);
-        let state = if self.is_final { format!("({})", state) } else { state };
+        let state = if self.is_final { format!("({state})") } else { state };
         format!("<tr><td sides=\"ltb\">{state}</td><td sides=\"trb\">{look_str}</td></tr>")
     }
 }
@@ -59,12 +59,12 @@ impl PilotState {
 
         let sep_border_top = if base.is_empty() { "t" } else { "" };
         let sep_border_bot = if closure.is_empty() { "b" } else { "" };
-        let sep_border_sides = if sep_border_bot != "" || sep_border_top != "" {
-            format!("sides=\"{}{}\"", sep_border_top, sep_border_bot)
+        let sep_border_sides = if !sep_border_bot.is_empty() || !sep_border_top.is_empty() {
+            format!("sides=\"{sep_border_top}{sep_border_bot}\"")
         } else {
             "border=\"0\"".to_string()
         };
-        let sep_border = format!("    <tr><td colspan=\"2\" {}></td></tr>", sep_border_sides);
+        let sep_border = format!("    <tr><td colspan=\"2\" {sep_border_sides}></td></tr>");
         
         res.push("    <table border=\"0\" cellborder=\"1\" cellspacing=\"0\">".to_string());
         res.extend(base);
@@ -73,7 +73,7 @@ impl PilotState {
         res.push("    </table>".to_string());
 
         let node_id = format!("I<sub>{}</sub>", self.id);
-        res.push(format!("  >, xlabel=<{}>];", node_id));
+        res.push(format!("  >, xlabel=<{node_id}>];"));
 
         let transitions: Vec<_> = self.transitions.iter().map(|t| {
             let double = if t.multiplicity > 1 {
@@ -96,6 +96,6 @@ impl Pilot {
             s.to_dot()
         }).collect::<Vec<_>>().join("\n");
         let trailer = "\n}";
-        format!("{}{}{}", header, states, trailer)
+        format!("{header}{states}{trailer}")
     }
 }

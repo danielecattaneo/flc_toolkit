@@ -6,7 +6,7 @@ use crate::validation::*;
 impl<ML: fmt::Display, SL, TL: fmt::Display> BaseMachine<ML, SL, TL> {
     pub fn validate_state_count(&self) -> bool {
         // All machines must have > 0 states
-        if self.states.len() == 0 {
+        if self.states.is_empty() {
             eprintln!("error: machine {} has zero states", self.label);
             false
         } else {
@@ -35,8 +35,8 @@ impl<ML: fmt::Display, SL, TL: fmt::Display> BaseMachine<ML, SL, TL> {
     pub fn validate_transitions(&self) -> bool {
         let mut res = true;
         for s in &self.states {
-            for (_, t) in s.transitions.iter().enumerate() {
-                if let None = self.try_lookup_state(t.dest_id) {
+            for t in s.transitions.iter() {
+                if self.try_lookup_state(t.dest_id).is_none() {
                     eprintln!("error: transition {}{} -{}-> {}{} goes to a non-existent state", s.id, self.label, t.label, t.dest_id, self.label);
                     res = false;
                 }

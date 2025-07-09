@@ -50,12 +50,12 @@ impl Parser {
         if let Some(look) = &self.lookahead {
             look.location.emit_error(s);
         } else {
-            eprintln!("error: {}", s);
+            eprintln!("error: {s}");
         }
     }
 
     fn advance(&mut self) -> Option<Token> {
-        if let Some(_) = self.lookahead {
+        if self.lookahead.is_some() {
             replace(&mut self.lookahead, self.lexer.next())
         } else {
             None
@@ -68,10 +68,10 @@ impl Parser {
         let mut state = State{id, label:StateLabel{ id, m_name:'?' }, transitions:vec![], is_initial:false, is_final:false};
         expect!(self, TokenValue::LBrace, "expected a state body enclosed in {}");
         loop {
-            if let Some(_) = accept!(self, TokenValue::KwInitial) {
+            if accept!(self, TokenValue::KwInitial).is_some() {
                 expect!(self, TokenValue::Semi, "expected semicolon");
                 state.is_initial = true;
-            } else if let Some(_) = accept!(self, TokenValue::KwFinal) {
+            } else if accept!(self, TokenValue::KwFinal).is_some() {
                 expect!(self, TokenValue::Semi, "expected semicolon");
                 state.is_final = true;
             } else if let token!(TokenValue::Ident(label)) = self.lookahead {

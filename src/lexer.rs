@@ -60,13 +60,13 @@ impl Token {
 impl Lexer {
     pub fn from_path(path: &Path) -> Lexer {
         let mut file = match File::open(path) {
-            Err(why) => panic!("couldn't open file: {}", why),
+            Err(why) => panic!("couldn't open file: {why}"),
             Ok(file) => file,
         };
     
         let mut s = String::new();
         if let Err(why) = file.read_to_string(&mut s) {
-            panic!("couldn't read file: {}", why);
+            panic!("couldn't read file: {why}");
         }
         Lexer{input:s, read_idx:0, read_loc:SourceLocation::new()}
     }
@@ -155,7 +155,7 @@ impl Lexer {
     fn skip_whitespace(&mut self) {
         loop {
             self.accept_while(|_, c| c.is_ascii_whitespace());
-            if let Some(_) = self.accept_pattern("//") {
+            if self.accept_pattern("//").is_some() {
                 self.accept_while(|_, c| c != '\n' && c != '\r');
             } else {
                 break;
@@ -203,6 +203,6 @@ impl Iterator for Lexer {
         } else if let Some(frag) = self.accept_invalid() {
             return Some(Token::from_frag(&frag, TokenValue::Invalid));
         }
-        return None;
+        None
     }
 }

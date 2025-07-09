@@ -28,7 +28,7 @@ enum CmdError {
 }
 
 fn banner() {
-    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
     eprintln!("FLC Toolkit {VERSION}");
 }
 
@@ -37,7 +37,7 @@ fn help() {
     let path = &args[0];
     //         12345678901234567890123456789012345678901234567890123456789012345678901234567890
     //                  11111111112222222222333333333344444444445555555555666666666677777777778
-    eprintln!("Usage: {} [cmd arg1 arg2 ...] [cmd arg1 arg2 ...] ...", path);
+    eprintln!("Usage: {path} [cmd arg1 arg2 ...] [cmd arg1 arg2 ...] ...");
     eprintln!();
     eprintln!("Commands:");
     eprintln!();
@@ -99,7 +99,7 @@ fn parse_list_arg(arg: &str) -> Option<Vec<i32>> {
         if let Ok(v) = part.trim().parse::<i32>() {
             res.push(v);
         } else {
-            eprintln!("error: cannot parse list \"{}\" in arguments", arg);
+            eprintln!("error: cannot parse list \"{arg}\" in arguments");
             return None;
         }
     }
@@ -148,7 +148,7 @@ fn cmd_echo_regex(args: &[String]) -> Result<&[String], CmdError> {
     let re_str = &args[0];
     let mut pars = RegexParser::new(re_str);
     if let Some(re) = pars.parse_regex() {
-        println!("{}", re);
+        println!("{re}");
         Ok(&args[1..])
     } else {
         Err(CmdError::ExecError)
@@ -236,10 +236,10 @@ fn cmd_bmc(args: &[String]) -> Result<&[String], CmdError> {
         println!("{}", bmc_fsm.to_dot_2(false, false));
         for sid in list {
             let Some(_) = bmc_fsm.try_lookup_state(sid) else {
-                eprintln!("error: state {} does not exist", sid);
+                eprintln!("error: state {sid} does not exist");
                 return Err(CmdError::BadArgs);
             };
-            eprintln!("Eliminating state {}", sid);
+            eprintln!("Eliminating state {sid}");
             bmc_fsm.eliminate(sid);
             bmc_fsm.merge_parallel_transitions();
             println!("{}", bmc_fsm.to_dot_2(false, false));
@@ -252,13 +252,13 @@ fn cmd_bmc(args: &[String]) -> Result<&[String], CmdError> {
         bmc_fsm.merge_parallel_transitions();
         println!("{}", bmc_fsm.to_dot_2(false, false));
         while let Some(sid) = bmc_fsm.choose_best_state() {
-            eprintln!("Eliminating state {}", sid);
+            eprintln!("Eliminating state {sid}");
             bmc_fsm.eliminate(sid);
             bmc_fsm.merge_parallel_transitions();
             println!("{}", bmc_fsm.to_dot_2(false, false));
         }
         println!("}}");
-        Ok(&args_left)
+        Ok(args_left)
     }
 }
 
