@@ -87,7 +87,9 @@ fn help() {
     eprintln!();
     eprintln!("  minimize <file>");
     eprintln!("    Minimizes the FSM in <file> using the Nerode-McCluskey algorithm, and then");
-    eprintln!("    prints it to the standard output stream in graphviz dot format.");
+    eprintln!("    prints it to the standard output stream in graphviz dot format. The process");
+    eprintln!("    of determining the set of distinguishable states is also printed to the");
+    eprintln!("    standard error stream.");
     eprintln!();
     eprintln!("  backprop <file>");
     eprintln!("  forwardprop <file>");

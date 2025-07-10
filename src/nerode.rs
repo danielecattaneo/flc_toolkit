@@ -3,47 +3,97 @@ use std::{collections::HashSet, collections::HashMap};
 use itertools::Itertools;
 use crate::fsm::*;
 
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
+pub enum DistinguishableReason {
+    S1NonFinalS2Final,
+    S1AcceptsAndNotS2(char),
+    S2AcceptsAndNotS1(char),
+    TransitiveRule(char, i32, i32)
+}
+
 #[derive(Eq, Debug)]
 pub struct DistinguishablePair {
     state_1: i32,
     state_2: i32,
+    reason: DistinguishableReason
 }
+
+pub type DistTable = HashSet<DistinguishablePair>;
 
 impl PartialEq for DistinguishablePair {
     fn eq(&self, other: &Self) -> bool {
-        self.state_1 == other.state_1 && self.state_2 == other.state_2
+        (self.state_1 == other.state_1 && self.state_2 == other.state_2) ||
+        (self.state_1 == other.state_2 && self.state_2 == other.state_1)
     }
 }
 
 impl std::hash::Hash for DistinguishablePair {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.state_1.hash(state);
-        self.state_2.hash(state);
+        if self.state_1 < self.state_2 {
+            self.state_1.hash(state);
+            self.state_2.hash(state);
+        } else {
+            self.state_2.hash(state);
+            self.state_1.hash(state);
+        }
     }
 }
 
-pub type DistTable = HashSet<DistinguishablePair>;
+impl DistinguishablePair {
+    fn from_states(state_1: i32, state_2: i32, reason: DistinguishableReason) -> DistinguishablePair {
+        DistinguishablePair{state_1, state_2, reason}
+    }
+
+    fn eq_to_state_pair(&self, s: i32, t: i32) -> bool {
+        (self.state_1 == s && self.state_2 == t) ||
+        (self.state_1 == t && self.state_2 == s)
+    }
+
+    fn counterexample(&self, rest: &DistTable) -> (String, i32) {
+        match self.reason {
+            DistinguishableReason::S1NonFinalS2Final => ("".to_string(), 1),
+            DistinguishableReason::S1AcceptsAndNotS2(c) => (format!("{c}..."), 0),
+            DistinguishableReason::S2AcceptsAndNotS1(c) => (format!("{c}..."), 1),
+            DistinguishableReason::TransitiveRule(c, s, t) => {
+                let next = rest.iter().find(|e| e.eq_to_state_pair(s, t)).unwrap();
+                let (cont, end) = next.counterexample(rest);
+                (format!("{c}{cont}"), end)
+            }
+        }
+    }
+
+    fn format_reason(&self, rest: &DistTable) -> String {
+        let reason = if self.reason == DistinguishableReason::S1NonFinalS2Final {
+            format!("{} is final and {} is not", self.state_2, self.state_1)
+        } else {
+            let (counterexample, which) = self.counterexample(rest);
+            let a = if which == 0 { self.state_1 } else { self.state_2 };
+            let b = if which == 0 { self.state_2 } else { self.state_1 };
+            let addition = if let DistinguishableReason::TransitiveRule(_, s, t) = self.reason {
+                format!(", due to {s} and {t} being distinguishable")
+            } else {
+                "".to_string()
+            };
+            format!("{a} accepts \"{counterexample}\" and {b} does not{addition}")
+        };
+        format!("{} and {} distinguishable because {reason}", self.state_1, self.state_2)
+    }
+}
 
 trait DistTableComparison {
-    fn insert_state_pair(&mut self, s: i32, t: i32);
+    fn insert_state_pair(&mut self, s: i32, t: i32, reason: DistinguishableReason);
     fn find_state_pair(&self, s: i32, t: i32) -> bool;
 }
 
 impl DistTableComparison for DistTable {
-    fn insert_state_pair(&mut self, s: i32, t: i32) {
-        if s < t {
-            self.insert(DistinguishablePair{state_1: s, state_2: t});
-        } else {
-            self.insert(DistinguishablePair{state_1: t, state_2: s});
-        }
+    fn insert_state_pair(&mut self, s: i32, t: i32, reason: DistinguishableReason) {
+        let dirty_pair = DistinguishablePair::from_states(s, t, reason);
+        eprintln!("{}", dirty_pair.format_reason(self));
+        self.insert(dirty_pair);
     }
 
     fn find_state_pair(&self, s: i32, t: i32) -> bool {
-        if s < t {
-            self.iter().any(|e| *e == DistinguishablePair{state_1: s, state_2: t})
-        } else {
-            self.iter().any(|e| *e == DistinguishablePair{state_1: t, state_2: s})
-        }
+        self.iter().any(|e| e.eq_to_state_pair(s, t))
     }
 }
 
@@ -75,8 +125,10 @@ impl Machine {
     pub fn dist_table_len_0(&self) -> DistTable {
         let mut res: DistTable = DistTable::new();
         for (s, t) in self.states.iter().tuple_combinations() {
-            if s.is_final != t.is_final {
-                res.insert_state_pair(s.id, t.id);
+            if s.is_final && !t.is_final {
+                res.insert_state_pair(t.id, s.id, DistinguishableReason::S1NonFinalS2Final);
+            } else if t.is_final && !s.is_final {
+                res.insert_state_pair(s.id, t.id, DistinguishableReason::S1NonFinalS2Final);
             }
         }
         res
@@ -88,23 +140,31 @@ impl Machine {
             if res.find_state_pair(s.id, t.id) {
                 continue;
             }
-            let distinguishable = s.transitions.iter().any(|sts| {
+            let distinguishable = s.transitions.iter().find_map(|sts| {
                 let maybe_tts = t.transitions.iter().find(|t| t.label == sts.label);
                 if let Some(tts) = maybe_tts {
-                    res.find_state_pair(sts.dest_id, tts.dest_id)
+                    if res.find_state_pair(sts.dest_id, tts.dest_id) {
+                        Some(DistinguishableReason::TransitiveRule(sts.label, sts.dest_id, tts.dest_id))
+                    } else {
+                        None
+                    }
                 } else {
-                    true
+                    Some(DistinguishableReason::S1AcceptsAndNotS2(sts.label))
                 }
-            }) || t.transitions.iter().any(|tts| {
+            }).or(t.transitions.iter().find_map(|tts| {
                 let maybe_sts = s.transitions.iter().find(|s| s.label == tts.label);
                 if let Some(sts) = maybe_sts {
-                    res.find_state_pair(tts.dest_id, sts.dest_id)
+                    if res.find_state_pair(tts.dest_id, sts.dest_id) {
+                        Some(DistinguishableReason::TransitiveRule(sts.label, sts.dest_id, tts.dest_id))
+                    } else {
+                        None
+                    }
                 } else {
-                    true
+                    Some(DistinguishableReason::S2AcceptsAndNotS1(tts.label))
                 }
-            });
-            if distinguishable {
-                res.insert_state_pair(s.id, t.id);
+            }));
+            if let Some(reason) = distinguishable {
+                res.insert_state_pair(s.id, t.id, reason);
                 count += 1;
             }
         }
