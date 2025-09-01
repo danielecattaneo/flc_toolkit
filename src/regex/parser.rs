@@ -58,7 +58,7 @@ struct RegexLexer<'a> {
 }
 
 impl RegexLexer<'_> {
-    fn from_str(string: &str) -> RegexLexer {
+    fn from_str(string: &str) -> RegexLexer<'_> {
         RegexLexer{ rest: string.char_indices() }
     }
 }
@@ -117,7 +117,7 @@ pub struct RegexParser<'a> {
 }
 
 impl RegexParser<'_> {
-    pub fn new(string: &str) -> RegexParser {
+    pub fn new(string: &str) -> RegexParser<'_> {
         let mut lexer = RegexLexer::from_str(string);
         let lookahead = lexer.next();
         RegexParser{ string, lexer, lookahead, lit_counter: 0 }

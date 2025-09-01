@@ -71,7 +71,7 @@ impl Lexer {
         Lexer{input:s, read_idx:0, read_loc:SourceLocation::new()}
     }
 
-    fn advance(&mut self, len: usize) -> Fragment {
+    fn advance(&mut self, len: usize) -> Fragment<'_> {
         let loc = self.read_loc;
         let slice = &self.input[self.read_idx..];
         let mut iter = slice.char_indices();
@@ -95,7 +95,7 @@ impl Lexer {
         Fragment{loc, val}
     }
 
-    fn accept_pattern(&mut self, pat: &str) -> Option<Fragment> {
+    fn accept_pattern(&mut self, pat: &str) -> Option<Fragment<'_>> {
         let next = &self.input[self.read_idx..];
         if next.starts_with(pat) {
             Some(self.advance(pat.len()))
@@ -104,7 +104,7 @@ impl Lexer {
         }
     }
 
-    fn accept_while<F>(&mut self, f: F) -> Option<Fragment> where F: Fn(usize, char) -> bool  {
+    fn accept_while<F>(&mut self, f: F) -> Option<Fragment<'_>> where F: Fn(usize, char) -> bool  {
         let slice = &self.input[self.read_idx..];
         let mut next_iter = slice.char_indices();
         let end = loop {
@@ -123,7 +123,7 @@ impl Lexer {
         }
     }
 
-    fn accept_identifier(&mut self) -> Option<Fragment> {
+    fn accept_identifier(&mut self) -> Option<Fragment<'_>> {
         self.accept_while(|i, c| {
             let cond = if i == 0 {
                 c.is_ascii_alphabetic()
@@ -134,17 +134,17 @@ impl Lexer {
         })
     }
 
-    fn accept_number(&mut self) -> Option<Fragment> {
+    fn accept_number(&mut self) -> Option<Fragment<'_>> {
         self.accept_while(|_, c| c.is_ascii_digit())
     }
 
-    fn accept_invalid(&mut self) -> Option<Fragment> {
+    fn accept_invalid(&mut self) -> Option<Fragment<'_>> {
         let slice = &self.input[self.read_idx..];
         let (i, _) = slice.char_indices().next()?;
         Some(self.advance(i))
     }
 
-    fn accept_eof(&mut self) -> Option<Fragment> {
+    fn accept_eof(&mut self) -> Option<Fragment<'_>> {
         if self.read_idx == self.input.len() {
             Some(Fragment{ loc: self.read_loc, val: "" })
         } else {
