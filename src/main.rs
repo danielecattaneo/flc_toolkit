@@ -186,14 +186,29 @@ fn cmd_berry_sethi(args: &[String]) -> Result<&[String], CmdError> {
         return Err(CmdError::BadArgs);
     }
     let re_str = &args[0];
+    let args_left = &args[1..];
     let mut pars = RegexParser::new(re_str);
-    if let Some(re) = pars.parse_regex() {
+    let Some(re) = pars.parse_regex() else {
+        return Err(CmdError::ExecError);
+    };
+
+    if args_left.len() >= 1 && (args_left[0] == "--minimize" || args_left[0] == "-m") {
+        eprintln!("{}", re.to_string_numbered());
+        re.dump_local_sets();
+        
+        let fsm = Machine::from_machine(berry_sethi(&re));
+        let mut dist = fsm.dist_table_len_0();
+        while fsm.dist_table_update(&mut dist) > 0 { }
+        let sets = fsm.cliques(&dist);
+        let m = MinimizedMachine::from_machine_and_equiv_sets(&fsm, &sets);
+        println!("{}", m.to_dot(false));
+
+        Ok(&args[2..])
+    } else {
         eprintln!("{}", re.to_string_numbered());
         re.dump_local_sets();
         println!("{}", berry_sethi(&re).to_dot(false));
         Ok(&args[1..])
-    } else {
-        Err(CmdError::ExecError)
     }
 }
 

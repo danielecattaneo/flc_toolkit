@@ -224,3 +224,26 @@ impl NumLocalSets for NumMachine {
         }).collect()
     }
 }
+
+impl Machine {
+    pub fn from_machine<SL>(old_m: BaseMachine<char, SL, char>) -> Machine {
+        let states = old_m.states.iter().map(|old_state| {
+            let mut new_ts: Vec<Transition> = Vec::new();
+            for old_t in &old_state.transitions {
+                let dest_id = old_t.dest_id;
+                let label = old_t.label;
+                new_ts.push(Transition{ label, dest_id });
+            }
+            let sl = StateLabel{
+                id: old_state.id,
+                m_name: char::from_digit(old_state.id as u32, 36).unwrap()};
+            State{
+                id: old_state.id,
+                label: sl,
+                transitions: new_ts,
+                is_final: old_state.is_final,
+                is_initial: old_state.is_initial}
+        });
+        Machine{ label: old_m.label, states: states.collect() }
+    }
+}
