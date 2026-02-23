@@ -26,7 +26,7 @@ pub type BMCState = BaseState<StateLabel, Regex>;
 pub type BMCMachine = BaseMachine<BMCMachineLabel, StateLabel, Regex>;
 
 impl BMCMachine {
-    pub fn from_machine(old_m: Machine) -> BMCMachine {
+    pub fn from_machine(old_m: &Machine) -> BMCMachine {
         let ini = BMCState{
             id: -1,
             label: StateLabel{ id: -1, m_name: old_m.label },
@@ -138,5 +138,9 @@ impl BMCMachine {
         }
         self.states.retain(|s| s.id != s_id);
         self.label.gen_id += 1;
+    }
+
+    pub fn regex(&self) -> Regex {
+        self.lookup_state(-1).transitions[0].label.clone()
     }
 }

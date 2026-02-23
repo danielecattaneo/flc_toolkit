@@ -13,6 +13,7 @@ mod nerode;
 
 use std::path::Path;
 use std::process::ExitCode;
+use itertools::Itertools;
 
 pub use crate::lexer::*;
 use crate::nerode::MinimizedMachine;
@@ -217,6 +218,28 @@ fn cmd_berry_sethi_fsm(args: &[String]) -> Result<&[String], CmdError> {
     }
 }
 
+fn bmc_find_shortest(fsm: &Machine) -> Vec<i32> {
+    let mut best: Vec<i32> = vec![];
+    let mut best_len = 0;
+    let states = fsm.states_ids();
+    let len_states = states.len();
+    for list in states.into_iter().permutations(len_states) {
+        let mut bmc_fsm = BMCMachine::from_machine(fsm);
+        bmc_fsm.merge_parallel_transitions();
+        for sid in &list {
+            bmc_fsm.eliminate(*sid);
+            bmc_fsm.merge_parallel_transitions();
+        }
+        let re = bmc_fsm.regex().to_string();
+        if best_len == 0 || re.len() < best_len {
+            best_len = re.len();
+            best = list;
+            eprintln!("{:?} -> {}", best, re);
+        }
+    }
+    best
+}
+
 fn cmd_bmc(args: &[String]) -> Result<&[String], CmdError> {
     if args.len() < 1 {
         eprintln!("error: missing argument to \"bmc\" command");
@@ -235,10 +258,15 @@ fn cmd_bmc(args: &[String]) -> Result<&[String], CmdError> {
             eprintln!("error: missing argument to \"--order\"");
             return Err(CmdError::BadArgs);
         }
-        let Some(list) = parse_list_arg(args_left[1].as_str()) else {
-            return Err(CmdError::BadArgs);
+        let list = if args_left[1] == "best" {
+            bmc_find_shortest(&fsm)
+        } else {
+            let Some(list) = parse_list_arg(args_left[1].as_str()) else {
+                return Err(CmdError::BadArgs);
+            };
+            list
         };
-        let mut bmc_fsm = BMCMachine::from_machine(fsm);
+        let mut bmc_fsm = BMCMachine::from_machine(&fsm);
         println!("digraph {{\n  rankdir=\"LR\";");
         bmc_fsm.merge_parallel_transitions();
         println!("{}", bmc_fsm.to_dot_2(false, false));
@@ -255,7 +283,7 @@ fn cmd_bmc(args: &[String]) -> Result<&[String], CmdError> {
         println!("}}");
         Ok(&args_left[2..])
     } else {
-        let mut bmc_fsm = BMCMachine::from_machine(fsm);
+        let mut bmc_fsm = BMCMachine::from_machine(&fsm);
         println!("digraph {{\n  rankdir=\"LR\";");
         bmc_fsm.merge_parallel_transitions();
         println!("{}", bmc_fsm.to_dot_2(false, false));

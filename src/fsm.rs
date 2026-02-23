@@ -70,6 +70,10 @@ impl<ML, SL, TL> BaseMachine<ML, SL, TL> {
         self.states.iter_mut().find(|s| s.id == id).expect("state does not exist")
     }
 
+    pub fn states_ids(&self) -> Vec<i32> {
+        self.states.iter().map(|s| s.id).collect()
+    }
+
     pub fn initial_states_ids(&self) -> Vec<i32> {
         self.states.iter().filter(|s| s.is_initial).map(|s| s.id).collect()
     }
